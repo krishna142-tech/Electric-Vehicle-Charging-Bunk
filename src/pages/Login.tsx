@@ -105,6 +105,10 @@ const Login: FC = () => {
     }
   };
 
+  if (user) {
+    return null;
+  }
+
   return (
     <Box
       className="page-container"
@@ -141,7 +145,7 @@ const Login: FC = () => {
             color: 'transparent',
           }}
         >
-          Welcome Back
+          Login
         </Typography>
 
         {error && (

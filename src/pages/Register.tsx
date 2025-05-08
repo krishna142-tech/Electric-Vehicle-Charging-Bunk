@@ -127,7 +127,6 @@ const Register: FC = () => {
           <TextField
             fullWidth
             label="Name"
-            type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             margin="normal"
@@ -162,17 +161,17 @@ const Register: FC = () => {
             onChange={(e) => setConfirmPassword(e.target.value)}
             margin="normal"
             required
-            sx={{ mb: 3 }}
+            sx={{ mb: 2 }}
           />
-          <FormControl fullWidth margin="normal" required>
+          <FormControl fullWidth margin="normal" sx={{ mb: 2 }}>
             <InputLabel>Role</InputLabel>
             <Select
               value={role}
-              label="Role"
               onChange={(e) => setRole(e.target.value as 'user' | 'admin')}
+              label="Role"
             >
               <MenuItem value="user">User</MenuItem>
-              <MenuItem value="admin" disabled>Admin</MenuItem>
+              <MenuItem value="admin">Admin</MenuItem>
             </Select>
           </FormControl>
           <Button
