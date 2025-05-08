@@ -1,6 +1,6 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore, enableNetwork, disableNetwork } from 'firebase/firestore';
+import { getFirestore, Firestore, disableNetwork } from 'firebase/firestore';
 import { initializeFirestore } from '../utils/firebaseErrorHandler';
 
 interface FirebaseConfig {

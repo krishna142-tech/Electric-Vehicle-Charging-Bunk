@@ -7,17 +7,10 @@ import PaymentIcon from '@mui/icons-material/Payment';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import LinkedInIcon from '@mui/icons-material/LinkedIn';
-import LanguageIcon from '@mui/icons-material/Language';
 import EmailIcon from '@mui/icons-material/Email';
+import SecurityIcon from '@mui/icons-material/Security';
+import SpeedIcon from '@mui/icons-material/Speed';
 import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import EvStationIcon from '@mui/icons-material/EvStation';
-import { Link as RouterLink } from 'react-router-dom';
-import {
-  Speed as SpeedIcon,
-  Security as SecurityIcon,
-  Support as SupportIcon
-} from '@mui/icons-material';
 
 const FeatureCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
@@ -33,21 +26,6 @@ const FeatureCard = styled(Paper)(({ theme }) => ({
   '&:hover': {
     transform: 'translateY(-8px)',
     boxShadow: '0 12px 40px rgba(0, 0, 0, 0.12)',
-  },
-}));
-
-const IconWrapper = styled(Box)(({ theme }) => ({
-  width: 64,
-  height: 64,
-  borderRadius: '50%',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginBottom: theme.spacing(2),
-  background: 'linear-gradient(135deg, #00A3E0, #34C759)',
-  color: '#FFFFFF',
-  '& svg': {
-    fontSize: 32,
   },
 }));
 

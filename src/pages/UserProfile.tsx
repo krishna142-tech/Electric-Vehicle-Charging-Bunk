@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useState } from 'react';
 import {
   Box,
   Container,
@@ -13,28 +13,20 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Chip,
   useTheme,
-  Snackbar,
-  CircularProgress,
-  Alert,
+  Snackbar
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import EditIcon from '@mui/icons-material/Edit';
 import HistoryIcon from '@mui/icons-material/History';
-import PaymentIcon from '@mui/icons-material/Payment';
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import CarIcon from '@mui/icons-material/DirectionsCar';
 import SettingsIcon from '@mui/icons-material/Settings';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useAuth } from '../context/AuthContext';
 import { updateProfile } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import MuiAlert from '@mui/material/Alert';
-import { AccountCircle } from '@mui/icons-material';
 
 const ProfileCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),

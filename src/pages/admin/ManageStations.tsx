@@ -36,7 +36,7 @@ import {
   AttachMoney as AttachMoneyIcon,
   AccessTime as AccessTimeIcon
 } from '@mui/icons-material';
-import { collection, query, onSnapshot, doc, deleteDoc, addDoc, updateDoc, where, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, query, doc, deleteDoc, addDoc, updateDoc, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import Map from '../../components/Map';
@@ -364,10 +364,6 @@ const ManageStations: FC = () => {
     setSnackbar({ open: true, message, severity });
   };
 
-  useEffect(() => {
-    fetchStations();
-  }, [user]);
-
   const fetchStations = async () => {
     try {
       if (!user) return;
@@ -398,6 +394,10 @@ const ManageStations: FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchStations();
+  }, [user, fetchStations]);
 
   const handleLocationSelect = (location: { lat: number; lng: number; address?: string }) => {
     setSelectedLocation(location);

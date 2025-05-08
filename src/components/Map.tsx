@@ -23,7 +23,6 @@ const Map: FC<MapProps> = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
-  const [selectedMarker, setSelectedMarker] = useState<google.maps.Marker | null>(null);
   const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(null);
   const [directionsService, setDirectionsService] = useState<google.maps.DirectionsService | null>(null);
   const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
@@ -31,13 +30,15 @@ const Map: FC<MapProps> = ({
   const [locationError, setLocationError] = useState<string | null>(null);
   const [mapsBlockedDialogOpen, setMapsBlockedDialogOpen] = useState(false);
   const geocoder = useRef<google.maps.Geocoder | null>(null);
-  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
-  const [estimatedTime, setEstimatedTime] = useState<string>('');
-  const [showBookingButton, setShowBookingButton] = useState(false);
-  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [loadRetries, setLoadRetries] = useState(0);
   const MAX_RETRIES = 3;
   const markersRef = useRef<google.maps.Marker[]>([]);
+
+  const handleMarkerClick = (station: Station) => {
+    if (onStationSelect) {
+      onStationSelect(station);
+    }
+  };
 
   const handleMapsError = (error: any) => {
     console.error('Google Maps loading error:', error);
@@ -60,12 +61,6 @@ const Map: FC<MapProps> = ({
       window.location.reload();
     } else {
       setLocationError('Unable to load maps after multiple attempts. Please try again later.');
-    }
-  };
-
-  const handleMarkerClick = (station: Station) => {
-    if (onStationSelect) {
-      onStationSelect(station);
     }
   };
 
@@ -279,104 +274,6 @@ const Map: FC<MapProps> = ({
     updateMarkers();
   }, [map, stations, isEditing, handleMarkerClick, markers]);
 
-  const findNearestStation = (
-    location: { lat: number; lng: number },
-    stations: Station[]
-  ): Station | null => {
-    if (!location || stations.length === 0) return null;
-
-    let nearest: Station | null = null;
-    let minDistance = Infinity;
-
-    stations.forEach(station => {
-      const distance = google.maps.geometry.spherical.computeDistanceBetween(
-        new google.maps.LatLng(location.lat, location.lng),
-        new google.maps.LatLng(station.latitude, station.longitude)
-      );
-
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearest = station;
-      }
-    });
-
-    return nearest;
-  };
-
-  const getDirectionsToStation = (destination: { lat: number; lng: number }) => {
-    if (!directionsService || !directionsRenderer || !userLocation) return;
-
-    directionsService.route(
-      {
-        origin: userLocation,
-        destination,
-        travelMode: google.maps.TravelMode.DRIVING,
-      },
-      (result, status) => {
-        if (status === 'OK' && result) {
-          directionsRenderer.setDirections(result);
-          if (infoWindow) {
-            infoWindow.close();
-          }
-          // Show estimated time and booking button
-          const duration = result.routes[0].legs[0].duration?.text || '';
-          setEstimatedTime(duration);
-          setShowBookingButton(true);
-          
-          // Update the info window with new content
-          if (selectedStation) {
-            const content = `
-              <div style="padding: 12px; font-family: Arial, sans-serif;">
-                <h3 style="margin: 0 0 8px; color: #1976D2; font-size: 16px;">${selectedStation.name}</h3>
-                <p style="margin: 0 0 8px; color: #666; font-size: 14px;">${selectedStation.address}</p>
-                <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
-                  <p style="margin: 0; font-size: 14px;">
-                    <strong>Estimated Time:</strong> ${duration}<br>
-                    <strong>Available:</strong> ${selectedStation.availableSlots}/${selectedStation.totalSlots} slots<br>
-                    <strong>Rate:</strong> ${selectedStation.rates.currency} ${selectedStation.rates.perHour}/hour<br>
-                    <strong>Hours:</strong> ${selectedStation.operatingHours.open} - ${selectedStation.operatingHours.close}
-                  </p>
-                </div>
-                <div style="display: flex; gap: 8px;">
-                  <button onclick="window.handleBookNow()" 
-                          style="background: #4CAF50; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; flex: 1; font-weight: 500; display: flex; align-items: center; justify-content: center;">
-                    Book Now
-                  </button>
-                  <button onclick="window.resetDirections()" 
-                          style="background: #f44336; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; flex: 1; font-weight: 500;">
-                    Clear Route
-                  </button>
-                </div>
-              </div>
-            `;
-            const newInfoWindow = new google.maps.InfoWindow({
-              content,
-              position: result.routes[0].legs[0].end_location
-            });
-            newInfoWindow.open(map);
-            setInfoWindow(newInfoWindow);
-          }
-        }
-      }
-    );
-  };
-
-  const resetDirections = () => {
-    if (directionsRenderer) {
-      const emptyResult: google.maps.DirectionsResult = {
-        routes: [],
-        request: {
-          origin: '',
-          destination: '',
-          travelMode: google.maps.TravelMode.DRIVING
-        }
-      };
-      directionsRenderer.setDirections(emptyResult);
-    }
-    setShowBookingButton(false);
-    setEstimatedTime('');
-  };
-
   const handleGetCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -436,18 +333,6 @@ const Map: FC<MapProps> = ({
       }
     }
   };
-
-  // Add this function to handle booking dialog
-  const handleBookNow = () => {
-    if (selectedStation) {
-      setIsBookingDialogOpen(true);
-    }
-  };
-
-  // Update the window.handleBookNow function
-  useEffect(() => {
-    (window as any).handleBookNow = handleBookNow;
-  }, [selectedStation, handleBookNow]);
 
   return (
     <Box sx={{ position: 'relative', height: '100%', width: '100%' }}>
@@ -529,13 +414,6 @@ const Map: FC<MapProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-      {selectedStation && (
-        <BookingModal
-          open={isBookingDialogOpen}
-          onClose={() => setIsBookingDialogOpen(false)}
-          station={selectedStation}
-        />
-      )}
     </Box>
   );
 };

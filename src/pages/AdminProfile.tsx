@@ -24,7 +24,6 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import SettingsIcon from '@mui/icons-material/Settings';
 import HistoryIcon from '@mui/icons-material/History';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import BookOnlineIcon from '@mui/icons-material/BookOnline';
 import { useAuth } from '../context/AuthContext';
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';

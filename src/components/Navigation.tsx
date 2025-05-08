@@ -56,7 +56,6 @@ const Navigation: FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
-  const [scanning, setScanning] = useState(false);
 
   const handleLogout = async () => {
     try {
