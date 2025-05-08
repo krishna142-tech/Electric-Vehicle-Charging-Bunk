@@ -14,15 +14,9 @@ app.use(cors({
 
 app.use(express.json());
 
-// Example sendOtp endpoint (replace with your actual OTP logic)
-app.post('/sendOtp', async (req, res) => {
-  const { email } = req.body;
-  if (!email) {
-    return res.status(400).json({ success: false, message: 'Email is required' });
-  }
-  // TODO: Implement your OTP sending logic here (e.g., generate OTP, send email/SMS, store OTP)
-  // For now, just return success for testing CORS
-  return res.status(200).json({ success: true, message: 'OTP sent (mock)' });
-});
+// Remove /sendOtp endpoint, as OTP is now handled by EmailJS
 
-exports.sendOtp = functions.https.onRequest(app); 
+// You can add other backend endpoints here if needed
+
+// Remove the export for sendOtp
+// exports.sendOtp = functions.https.onRequest(app); 
