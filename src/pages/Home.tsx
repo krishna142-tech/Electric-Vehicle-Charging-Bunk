@@ -3,8 +3,6 @@ import { Box, Container, Typography, Grid, Paper, useTheme, Link } from '@mui/ma
 import { styled } from '@mui/material/styles';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import SecurityIcon from '@mui/icons-material/Security';
-import SpeedIcon from '@mui/icons-material/Speed';
 import PaymentIcon from '@mui/icons-material/Payment';
 import SupportAgentIcon from '@mui/icons-material/SupportAgent';
 import GitHubIcon from '@mui/icons-material/GitHub';
@@ -14,6 +12,12 @@ import EmailIcon from '@mui/icons-material/Email';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import EvStationIcon from '@mui/icons-material/EvStation';
+import { Link as RouterLink } from 'react-router-dom';
+import {
+  Speed as SpeedIcon,
+  Security as SecurityIcon,
+  Support as SupportIcon
+} from '@mui/icons-material';
 
 const FeatureCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),

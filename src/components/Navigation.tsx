@@ -56,8 +56,6 @@ const Navigation: FC = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
 
   const handleLogout = async () => {
@@ -567,10 +565,11 @@ const Navigation: FC = () => {
                         open={scanDialogOpen}
                         onClose={() => setScanDialogOpen(false)}
                         onScanSuccess={(data: string) => {
-                          setScanSuccess('Scanned: ' + data);
-                          setTimeout(() => setScanDialogOpen(false), 1200);
+                          setScanDialogOpen(false);
                         }}
-                        onScanError={(err: string) => setScanError('QR scan error. Please try again.')}
+                        onScanError={(err: string) => {
+                          console.error('QR scan error:', err);
+                        }}
                       />
                     </>
                   )}

@@ -1,20 +1,23 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useEffect, useState } from 'react';
 import {
   Box,
+  Typography,
   Grid,
   Paper,
-  Typography,
+  Button,
   Card,
   CardContent,
-  Button,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  CircularProgress
+  CircularProgress,
+  useTheme,
+  Chip
 } from '@mui/material';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import {
+  EvStation as StationIcon,
+  BookOnline as BookingIcon,
+  BatteryChargingFull as ChargingIcon,
+  Warning as WarningIcon
+} from '@mui/icons-material';
+import { collection, query, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../context/AuthContext';
 import { Station } from '../types';

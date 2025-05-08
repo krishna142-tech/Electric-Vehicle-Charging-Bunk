@@ -1,31 +1,30 @@
 import { FC, useState, useEffect } from 'react';
 import {
-  Container,
+  Box,
   Typography,
-  Button,
+  Paper,
   Grid,
-  Card,
-  CardContent,
-  CardActions,
-  TextField,
+  Button,
+  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Alert,
-  Box,
-  Chip,
+  TextField,
   CircularProgress,
-  IconButton,
-  Paper,
+  Alert,
+  useTheme,
+  Container,
+  Card,
+  CardContent,
+  CardActions,
+  Chip,
   Tooltip,
-  MenuItem,
-  Select,
   FormControl,
   InputLabel,
+  Select,
+  MenuItem,
   Snackbar,
-  useTheme,
-  alpha,
   useMediaQuery
 } from '@mui/material';
 import {
@@ -33,18 +32,16 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   LocationOn as LocationIcon,
-  ElectricCar as ElectricCarIcon,
-  AccessTime as AccessTimeIcon,
-  AttachMoney as AttachMoneyIcon,
   BatteryChargingFull as BatteryIcon,
-  LocationOn as LocationOnIcon
+  AttachMoney as AttachMoneyIcon,
+  AccessTime as AccessTimeIcon
 } from '@mui/icons-material';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp, query, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, deleteDoc, addDoc, updateDoc, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
-import { Station, User } from '../../types';
 import Map from '../../components/Map';
 import LocationPicker from '../../components/LocationPicker';
+import { Station } from '../../types';
 
 interface StationFormData {
   name: string;
@@ -606,7 +603,7 @@ const ManageStations: FC = () => {
           </Button>
           <Button
             variant="contained"
-            startIcon={<LocationOnIcon />}
+            startIcon={<LocationIcon />}
             onClick={() => window.location.href = '/admin/stations-map'}
             sx={{
               borderRadius: '12px',

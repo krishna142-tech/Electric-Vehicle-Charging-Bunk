@@ -37,6 +37,7 @@ const Map: FC<MapProps> = ({
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
   const [loadRetries, setLoadRetries] = useState(0);
   const MAX_RETRIES = 3;
+  const markersRef = useRef<google.maps.Marker[]>([]);
 
   const handleMapsError = (error: any) => {
     console.error('Google Maps loading error:', error);
@@ -59,6 +60,12 @@ const Map: FC<MapProps> = ({
       window.location.reload();
     } else {
       setLocationError('Unable to load maps after multiple attempts. Please try again later.');
+    }
+  };
+
+  const handleMarkerClick = (station: Station) => {
+    if (onStationSelect) {
+      onStationSelect(station);
     }
   };
 
@@ -238,52 +245,39 @@ const Map: FC<MapProps> = ({
         directionsRenderer.setMap(null);
       }
     };
-  }, [isEditing, selectedLocation, loadRetries]);
+  }, [isEditing, selectedLocation, loadRetries, directionsRenderer, onLocationSelect]);
 
-  // Separate useEffect for handling markers to prevent infinite loop
   useEffect(() => {
     if (!map || !stations.length || isEditing) return;
 
     const updateMarkers = () => {
       // Clear existing markers
-      markers.forEach((marker) => marker.setMap(null));
+      markersRef.current.forEach(marker => marker.setMap(null));
+      markersRef.current = [];
 
-      // Create new markers for stations
-      const newMarkers = stations
-        .filter(station => {
-          const lat = Number(station.latitude);
-          const lng = Number(station.longitude);
-          return !isNaN(lat) && !isNaN(lng) && 
-                 lat >= -90 && lat <= 90 && 
-                 lng >= -180 && lng <= 180;
-        })
-        .map((station) => {
-          const marker = new google.maps.Marker({
-            position: { 
-              lat: Number(station.latitude), 
-              lng: Number(station.longitude) 
-            },
-            map,
-            icon: {
-              url: '/ev-station-marker.svg',
-              scaledSize: new google.maps.Size(40, 40),
-              anchor: new google.maps.Point(20, 20),
-            },
-            title: station.name,
-          });
-
-          marker.addListener('click', () => {
-            handleMarkerClick(station, marker);
-          });
-
-          return marker;
+      // Add new markers
+      const newMarkers = stations.map(station => {
+        const marker = new google.maps.Marker({
+          position: { lat: station.latitude, lng: station.longitude },
+          map,
+          title: station.name,
+          icon: {
+            url: '/ev-station-marker.svg',
+            scaledSize: new google.maps.Size(40, 40),
+            anchor: new google.maps.Point(20, 20),
+          }
         });
 
+        marker.addListener('click', () => handleMarkerClick(station));
+        return marker;
+      });
+
+      markersRef.current = newMarkers;
       setMarkers(newMarkers);
     };
 
     updateMarkers();
-  }, [map, stations, isEditing]);
+  }, [map, stations, isEditing, handleMarkerClick, markers]);
 
   const findNearestStation = (
     location: { lat: number; lng: number },
@@ -383,51 +377,6 @@ const Map: FC<MapProps> = ({
     setEstimatedTime('');
   };
 
-  // Update marker click handler
-  const handleMarkerClick = (station: Station, marker: google.maps.Marker) => {
-    if (infoWindow) {
-      infoWindow.close();
-      setSelectedStation(station);
-
-      const content = `
-        <div style="padding: 12px; font-family: Arial, sans-serif;">
-          <h3 style="margin: 0 0 8px; color: #1976D2; font-size: 16px;">${station.name}</h3>
-          <p style="margin: 0 0 8px; color: #666; font-size: 14px;">${station.address}</p>
-          <div style="background: #f5f5f5; padding: 8px; border-radius: 4px; margin-bottom: 8px;">
-            <p style="margin: 0; font-size: 14px;">
-              <strong>Available:</strong> ${station.availableSlots}/${station.totalSlots} slots<br>
-              <strong>Rate:</strong> ${station.rates.currency} ${station.rates.perHour}/hour<br>
-              <strong>Hours:</strong> ${station.operatingHours.open} - ${station.operatingHours.close}
-            </p>
-          </div>
-          <button onclick="window.getDirections(${station.latitude}, ${station.longitude})" 
-                  style="background: #1976D2; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="white">
-              <path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5l3.5 3.5-3.5 3.5z"/>
-            </svg>
-            Get Directions
-          </button>
-        </div>
-      `;
-
-      infoWindow.setContent(content);
-      infoWindow.open(map, marker);
-
-      // Add global functions for the buttons
-      (window as any).getDirections = (destLat: number, destLng: number) => {
-        getDirectionsToStation({ lat: destLat, lng: destLng });
-      };
-      (window as any).handleBookNow = () => {
-        if (onStationSelect && selectedStation) {
-          onStationSelect(selectedStation);
-        }
-      };
-      (window as any).resetDirections = () => {
-        resetDirections();
-      };
-    }
-  };
-
   const handleGetCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -498,7 +447,7 @@ const Map: FC<MapProps> = ({
   // Update the window.handleBookNow function
   useEffect(() => {
     (window as any).handleBookNow = handleBookNow;
-  }, [selectedStation]);
+  }, [selectedStation, handleBookNow]);
 
   return (
     <Box sx={{ position: 'relative', height: '100%', width: '100%' }}>

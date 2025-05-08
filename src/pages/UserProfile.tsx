@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -16,6 +16,8 @@ import {
   Chip,
   useTheme,
   Snackbar,
+  CircularProgress,
+  Alert,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import EditIcon from '@mui/icons-material/Edit';
@@ -29,9 +31,10 @@ import PhoneIcon from '@mui/icons-material/Phone';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import { useAuth } from '../context/AuthContext';
 import { updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import MuiAlert from '@mui/material/Alert';
+import { AccountCircle } from '@mui/icons-material';
 
 const ProfileCard = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(4),
