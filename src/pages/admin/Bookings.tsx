@@ -48,9 +48,9 @@ const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onS
     scannerInstance.current?.clear();
   }, [onScanSuccess]);
   useEffect(() => {
-    if (open && scannerRef.current) {
+    if (open) {
       scannerInstance.current = new Html5QrcodeScanner(
-        scannerRef.current.id,
+        'qr-scanner',
         { fps: 10, qrbox: 250 },
         false
       );
@@ -71,7 +71,7 @@ const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onS
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>Scan User QR Code</DialogTitle>
       <DialogContent>
-        <div id="qr-scanner" ref={scannerRef} style={{ width: '100%' }} />
+        <div id="qr-scanner" ref={scannerRef} style={{ width: '100%' }}></div>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
           Point the camera at the user's booking QR code.
         </Typography>
