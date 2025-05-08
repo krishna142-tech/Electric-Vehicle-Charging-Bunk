@@ -16,7 +16,10 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Container
+  Container,
+  Tooltip,
+  Avatar,
+  Fade
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -48,6 +51,8 @@ const pulseAnimation = keyframes`
 const Navigation: FC = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
