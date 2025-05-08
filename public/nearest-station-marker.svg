@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Glow effect -->
+  <circle cx="20" cy="20" r="19" fill="#4CAF50" fill-opacity="0.3"/>
+  
+  <!-- Background circle -->
+  <circle cx="20" cy="20" r="16" fill="#4CAF50"/>
+  
+  <!-- Battery outline -->
+  <rect x="12" y="12" width="16" height="16" rx="2" fill="white"/>
+  <rect x="29" y="16" width="2" height="8" fill="white"/>
+  
+  <!-- Thunder symbol -->
+  <path d="M22 14L16 20H20L16 26L22 20H18L22 14Z" fill="#4CAF50"/>
+</svg> 
