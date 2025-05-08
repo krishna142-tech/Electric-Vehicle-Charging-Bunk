@@ -16,7 +16,6 @@ import {
   useMediaQuery,
   Card,
   CardContent,
-  CardActions,
   Button,
   useTheme,
   Dialog,
