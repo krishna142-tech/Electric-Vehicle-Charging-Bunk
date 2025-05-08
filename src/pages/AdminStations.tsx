@@ -1,4 +1,4 @@
-import { FC, useState, useEffect, useRef } from 'react';
+import { FC, useState, useEffect, useRef, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -73,23 +73,16 @@ const AdminStations: FC = () => {
   const [loading, setLoading] = useState(true);
   const mapRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchStations();
-  }, [user]);
-
-  const fetchStations = async () => {
+  const fetchStations = useCallback(async () => {
     try {
       if (!user) return;
-      
       const stationsRef = collection(db, 'stations');
       const q = query(stationsRef, where('createdBy', '==', user.uid));
       const querySnapshot = await getDocs(q);
-      
       const stationData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Station));
-      
       setStations(stationData);
     } catch (error) {
       console.error('Error fetching stations:', error);
@@ -97,7 +90,11 @@ const AdminStations: FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchStations();
+  }, [user, fetchStations]);
 
   const showSnackbar = (message: string, severity: 'success' | 'error') => {
     setSnackbar({ open: true, message, severity });

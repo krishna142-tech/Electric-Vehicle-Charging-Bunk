@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -364,10 +364,9 @@ const ManageStations: FC = () => {
     setSnackbar({ open: true, message, severity });
   };
 
-  const fetchStations = async () => {
+  const fetchStations = useCallback(async () => {
     try {
       if (!user) return;
-      
       setLoading(true);
       setError(null);
       const stationsRef = collection(db, 'stations');
@@ -375,7 +374,6 @@ const ManageStations: FC = () => {
       const querySnapshot = await getDocs(adminStationsQuery);
       const stationData = querySnapshot.docs.map(doc => {
         const data = doc.data();
-        // Add default values for rates if missing
         return {
           id: doc.id,
           ...data,
@@ -393,7 +391,7 @@ const ManageStations: FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchStations();
