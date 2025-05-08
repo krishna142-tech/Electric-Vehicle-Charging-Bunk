@@ -32,9 +32,9 @@ const Map: FC<MapProps> = ({
   onLocationSelect,
 }) => {
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+  const mapDivRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(null);
@@ -49,7 +49,7 @@ const Map: FC<MapProps> = ({
   const markersRef = useRef<google.maps.Marker[]>([]);
 
   useEffect(() => {
-    if (mapContainerRef.current) {
+    if (mapDivRef.current) {
       observerRef.current = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
@@ -61,7 +61,7 @@ const Map: FC<MapProps> = ({
         },
         { threshold: 0.1 }
       );
-      observerRef.current.observe(mapContainerRef.current);
+      observerRef.current.observe(mapDivRef.current);
     }
 
     return () => {
@@ -109,10 +109,11 @@ const Map: FC<MapProps> = ({
     mapsLoader
       .load()
       .then(() => {
-        if (!mapRef.current) return;
+        const mapDiv = mapDivRef.current;
+        if (!mapDiv) return;
 
         try {
-          mapInstance = new google.maps.Map(mapRef.current as HTMLElement, {
+          mapInstance = new google.maps.Map(mapDiv, {
             center: DEFAULT_CENTER,
             zoom: 5,
             styles: [
@@ -128,6 +129,7 @@ const Map: FC<MapProps> = ({
           return;
         }
 
+        mapRef.current = mapInstance;
         setMap(mapInstance);
         setInfoWindow(new google.maps.InfoWindow());
         setDirectionsService(new google.maps.DirectionsService());
@@ -165,26 +167,22 @@ const Map: FC<MapProps> = ({
             (error) => {
               console.error('Geolocation error:', error);
               let errorMessage = 'Unable to get your location. ';
-              
-              // Handle specific error codes
               switch (error.code) {
-                case 1: // PERMISSION_DENIED
+                case 1:
                   if (window.location.protocol !== 'https:') {
                     errorMessage = 'Geolocation requires a secure connection (HTTPS). Please access this site using HTTPS.';
                   } else {
                     errorMessage = 'Location permission denied. Please enable location services in your browser settings.';
                   }
                   break;
-                case 2: // POSITION_UNAVAILABLE
+                case 2:
                   errorMessage = 'Location information is unavailable. Please try again.';
                   break;
-                case 3: // TIMEOUT
+                case 3:
                   errorMessage = 'Location request timed out. Please try again.';
                   break;
               }
-              
               setLocationError(errorMessage);
-              // Use default location as fallback
               setUserLocation(DEFAULT_CENTER);
               mapInstance.setCenter(DEFAULT_CENTER);
               mapInstance.setZoom(5);
@@ -284,11 +282,8 @@ const Map: FC<MapProps> = ({
     if (!map || !stations.length || isEditing) return;
 
     const updateMarkers = () => {
-      // Clear existing markers
       markersRef.current.forEach(marker => marker.setMap(null));
       markersRef.current = [];
-
-      // Add new markers
       const newMarkers = stations.map(station => {
         const marker = new google.maps.Marker({
           position: { lat: station.latitude, lng: station.longitude },
@@ -300,15 +295,12 @@ const Map: FC<MapProps> = ({
             anchor: new google.maps.Point(20, 20),
           }
         });
-
         marker.addListener('click', () => handleStationClick(station));
         return marker;
       });
-
       markersRef.current = newMarkers;
       setMarkers(newMarkers);
     };
-
     updateMarkers();
   }, [map, stations, isEditing, handleStationClick, markers]);
 
@@ -330,26 +322,22 @@ const Map: FC<MapProps> = ({
         (error) => {
           console.error('Geolocation error:', error);
           let errorMessage = 'Unable to get your location. ';
-          
-          // Handle specific error codes
           switch (error.code) {
-            case 1: // PERMISSION_DENIED
+            case 1:
               if (window.location.protocol !== 'https:') {
                 errorMessage = 'Geolocation requires a secure connection (HTTPS). Please access this site using HTTPS.';
               } else {
                 errorMessage = 'Location permission denied. Please enable location services in your browser settings.';
               }
               break;
-            case 2: // POSITION_UNAVAILABLE
+            case 2:
               errorMessage = 'Location information is unavailable. Please try again.';
               break;
-            case 3: // TIMEOUT
+            case 3:
               errorMessage = 'Location request timed out. Please try again.';
               break;
           }
-          
           setLocationError(errorMessage);
-          // Use default location as fallback
           setUserLocation(DEFAULT_CENTER);
           if (map) {
             map.setCenter(DEFAULT_CENTER);
@@ -373,7 +361,7 @@ const Map: FC<MapProps> = ({
   };
 
   return (
-    <Box ref={mapContainerRef} sx={{ width: '100%', height: '400px', position: 'relative' }}>
+    <Box ref={mapDivRef} sx={{ width: '100%', height: '400px', position: 'relative' }}>
       <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''}>
         <GoogleMap
           mapContainerStyle={containerStyle}
@@ -440,7 +428,6 @@ const Map: FC<MapProps> = ({
           </IconButton>
         </Tooltip>
       </Box>
-      
       <Dialog
         open={mapsBlockedDialogOpen}
         onClose={() => setMapsBlockedDialogOpen(false)}
