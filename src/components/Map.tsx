@@ -1,9 +1,10 @@
 import { FC, useEffect, useRef, useState } from 'react';
-import { Box, IconButton, Typography, Button, Tooltip, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, IconButton, Typography, Button, Tooltip, Alert, Dialog, DialogTitle, DialogContent, DialogActions, Paper } from '@mui/material';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
 import { Station } from '../types';
 import { mapsLoader, DEFAULT_CENTER } from '../config/maps';
 import BookingModal from './BookingModal';
+import { GoogleMap, LoadScript, Marker, InfoWindow } from '@react-google-maps/api';
 
 interface MapProps {
   stations?: Station[];
@@ -13,6 +14,16 @@ interface MapProps {
   onLocationSelect?: (location: { lat: number; lng: number; address?: string }) => void;
 }
 
+const containerStyle = {
+  width: '100%',
+  height: '400px'
+};
+
+const center = {
+  lat: 20.5937,
+  lng: 78.9629
+};
+
 const Map: FC<MapProps> = ({
   stations = [],
   onStationSelect,
@@ -20,7 +31,10 @@ const Map: FC<MapProps> = ({
   selectedLocation,
   onLocationSelect,
 }) => {
-  const mapRef = useRef<HTMLDivElement>(null);
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const [map, setMap] = useState<google.maps.Map | null>(null);
   const [markers, setMarkers] = useState<google.maps.Marker[]>([]);
   const [infoWindow, setInfoWindow] = useState<google.maps.InfoWindow | null>(null);
@@ -34,7 +48,31 @@ const Map: FC<MapProps> = ({
   const MAX_RETRIES = 3;
   const markersRef = useRef<google.maps.Marker[]>([]);
 
-  const handleMarkerClick = (station: Station) => {
+  useEffect(() => {
+    if (mapContainerRef.current) {
+      observerRef.current = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting && mapRef.current) {
+              // Trigger map resize when container is visible
+              google.maps.event.trigger(mapRef.current, 'resize');
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+      observerRef.current.observe(mapContainerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  const handleStationClick = (station: Station) => {
+    setSelectedStation(station);
     if (onStationSelect) {
       onStationSelect(station);
     }
@@ -263,7 +301,7 @@ const Map: FC<MapProps> = ({
           }
         });
 
-        marker.addListener('click', () => handleMarkerClick(station));
+        marker.addListener('click', () => handleStationClick(station));
         return marker;
       });
 
@@ -272,7 +310,7 @@ const Map: FC<MapProps> = ({
     };
 
     updateMarkers();
-  }, [map, stations, isEditing, handleMarkerClick, markers]);
+  }, [map, stations, isEditing, handleStationClick, markers]);
 
   const handleGetCurrentLocation = () => {
     if (navigator.geolocation) {
@@ -335,8 +373,36 @@ const Map: FC<MapProps> = ({
   };
 
   return (
-    <Box sx={{ position: 'relative', height: '100%', width: '100%' }}>
-      <div ref={mapRef} style={{ height: '100%', width: '100%' }} />
+    <Box ref={mapContainerRef} sx={{ width: '100%', height: '400px', position: 'relative' }}>
+      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''}>
+        <GoogleMap
+          mapContainerStyle={containerStyle}
+          center={center}
+          zoom={5}
+          onLoad={(map) => {
+            mapRef.current = map;
+          }}
+        >
+          {stations.map((station) => (
+            <Marker
+              key={station.id}
+              position={{ lat: station.latitude, lng: station.longitude }}
+              onClick={() => handleStationClick(station)}
+            />
+          ))}
+          {selectedStation && (
+            <InfoWindow
+              position={{ lat: selectedStation.latitude, lng: selectedStation.longitude }}
+              onCloseClick={() => setSelectedStation(null)}
+            >
+              <Paper sx={{ p: 1 }}>
+                <Typography variant="subtitle1">{selectedStation.name}</Typography>
+                <Typography variant="body2">{selectedStation.address}</Typography>
+              </Paper>
+            </InfoWindow>
+          )}
+        </GoogleMap>
+      </LoadScript>
       {locationError && (
         <Alert 
           severity="warning" 
