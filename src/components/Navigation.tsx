@@ -188,7 +188,7 @@ const Navigation: FC = () => {
                 }
               }}
             >
-              EV Charging
+              Ampora
             </Typography>
           </Box>
 

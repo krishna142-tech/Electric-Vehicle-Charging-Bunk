@@ -1,4 +1,4 @@
-# Electric Vehicle Recharge Bunk
+# Ampora
 
 A modern web application for managing and booking electric vehicle charging stations.
 
