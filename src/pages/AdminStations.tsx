@@ -514,9 +514,6 @@ const AdminStations: FC = () => {
         <DialogContent>
           <Box sx={{ height: 400, width: '100%', mt: 2 }}>
             <Map
-              isEditing={true}
-              onLocationSelect={handleLocationSelect}
-              selectedLocation={selectedLocation}
               stations={stations}
             />
           </Box>
