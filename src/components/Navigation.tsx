@@ -7,20 +7,16 @@ import {
   Typography,
   Button,
   Box,
-  Container,
   IconButton,
   Menu,
   MenuItem,
   useTheme,
   useMediaQuery,
-  Avatar,
-  Tooltip,
-  Fade,
-  keyframes,
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Container
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -35,14 +31,14 @@ import {
   QrCodeScanner
 } from '@mui/icons-material';
 import { Html5QrcodeScanner } from 'html5-qrcode';
+import { keyframes } from '@mui/system';
 
-// Define keyframe animations
+// Define keyframe animations for logo and text if needed
 const gradientShift = keyframes`
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 `;
-
 const pulseAnimation = keyframes`
   0% { transform: scale(1); }
   50% { transform: scale(1.05); }
@@ -51,8 +47,6 @@ const pulseAnimation = keyframes`
 
 const Navigation: FC = () => {
   const { user, logout } = useAuth();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const location = useLocation();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);

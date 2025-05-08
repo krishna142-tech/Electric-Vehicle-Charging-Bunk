@@ -8,13 +8,12 @@ import {
   Box,
   TextField,
   InputAdornment,
-  IconButton,
   Alert,
   CircularProgress,
   Typography
 } from '@mui/material';
 import { LocationOn as LocationIcon, Search as SearchIcon } from '@mui/icons-material';
-import { mapsLoader, DEFAULT_CENTER, loadMapsWithRetry, resetMapsLoader, isMapsLoaded } from '../config/maps';
+import { DEFAULT_CENTER, loadMapsWithRetry } from '../config/maps';
 
 interface LocationPickerProps {
   open: boolean;

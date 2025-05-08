@@ -1,7 +1,6 @@
 import { FC, useEffect, useRef, useState } from 'react';
-import { Box, IconButton, Paper, Typography, Button, Tooltip, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Box, IconButton, Typography, Button, Tooltip, Alert, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import MyLocationIcon from '@mui/icons-material/MyLocation';
-import DirectionsIcon from '@mui/icons-material/Directions';
 import { Station } from '../types';
 import { mapsLoader, DEFAULT_CENTER } from '../config/maps';
 import BookingModal from './BookingModal';

@@ -12,7 +12,6 @@ import Bookings from './pages/admin/Bookings';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import ManageStations from './pages/admin/ManageStations';
-import UserDashboard from './pages/user/UserDashboard';
 import Stations from './pages/user/Stations';
 import UserBookings from './pages/user/UserBookings';
 import NotFound from './pages/NotFound';
