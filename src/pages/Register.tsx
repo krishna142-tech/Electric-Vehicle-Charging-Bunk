@@ -31,6 +31,7 @@ const Register: FC = () => {
   const [otpDialogOpen, setOtpDialogOpen] = useState(false);
   const [pendingRegister, setPendingRegister] = useState<any>(null);
   const [otpError, setOtpError] = useState('');
+  const [sentOtp, setSentOtp] = useState('');
   const { register, user } = useAuth();
   const navigate = useNavigate();
 
@@ -49,7 +50,8 @@ const Register: FC = () => {
       return;
     }
     try {
-      await sendOtp(email);
+      const generatedOtp = await sendOtp(email);
+      setSentOtp(generatedOtp);
       setPendingRegister({ email, password, name, role });
       setOtpDialogOpen(true);
     } catch (err) {
@@ -59,17 +61,16 @@ const Register: FC = () => {
 
   const handleVerifyOtp = async () => {
     setOtpError('');
-    try {
-      const result = await verifyOtp(pendingRegister.email, otp);
-      const data = result.data as { success: boolean; message?: string };
-      if (data.success) {
+    const isValid = await verifyOtp(otp, sentOtp);
+    if (isValid) {
+      try {
         await register(pendingRegister.email, pendingRegister.password, pendingRegister.name, pendingRegister.role);
         setOtpDialogOpen(false);
-      } else {
-        setOtpError(data.message || 'Invalid OTP');
+      } catch (err) {
+        setOtpError('Registration failed. Please try again.');
       }
-    } catch (err) {
-      setOtpError('Failed to verify OTP.');
+    } else {
+      setOtpError('Invalid OTP');
     }
   };
 

@@ -30,6 +30,7 @@ const Login: FC = () => {
   const [otpError, setOtpError] = useState('');
   const [otpStep, setOtpStep] = useState<'send' | 'verify'>('send');
   const [otpEmail, setOtpEmail] = useState('');
+  const [sentOtp, setSentOtp] = useState('');
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,7 +85,8 @@ const Login: FC = () => {
   const handleSendOtp = async () => {
     setOtpError('');
     try {
-      await sendOtp(otpEmail);
+      const generatedOtp = await sendOtp(otpEmail);
+      setSentOtp(generatedOtp);
       setOtpStep('verify');
     } catch (err) {
       setOtpError('Failed to send OTP.');
@@ -93,18 +95,13 @@ const Login: FC = () => {
 
   const handleVerifyOtp = async () => {
     setOtpError('');
-    try {
-      const result = await verifyOtp(otpEmail, otp);
-      const data = result.data as { success: boolean; message?: string };
-      if (data.success) {
-        // Passwordless login: set a temp password and sign in
-        await signIn(otpEmail, 'TEMP_OTP_LOGIN'); // You must handle this in your backend or AuthContext
-        setOtpDialogOpen(false);
-      } else {
-        setOtpError(data.message || 'Invalid OTP');
-      }
-    } catch (err) {
-      setOtpError('Failed to verify OTP.');
+    const isValid = await verifyOtp(otp, sentOtp);
+    if (isValid) {
+      // Show a success message or proceed with passwordless login logic
+      setOtpDialogOpen(false);
+      alert('OTP verified! You can now log in or reset your password.');
+    } else {
+      setOtpError('Invalid OTP');
     }
   };
 
