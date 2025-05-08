@@ -49,7 +49,7 @@ const Map: FC<MapProps> = ({
   const markersRef = useRef<google.maps.Marker[]>([]);
 
   useEffect(() => {
-    if (mapDivRef.current) {
+    if (mapDivRef.current && mapDivRef.current instanceof Element) {
       observerRef.current = new IntersectionObserver(
         (entries) => {
           entries.forEach((entry) => {
