@@ -1,4 +1,4 @@
-import { FC, useEffect, useState, useRef, useCallback } from 'react';
+import { FC, useEffect, useState, useRef, useCallback, useId } from 'react';
 import {
   Box,
   Typography,
@@ -43,10 +43,11 @@ interface QRScanDialogProps {
 const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onScanError }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<any>(null);
+  const uniqueId = typeof useId === 'function' ? useId() : 'qr-scanner-' + Math.random().toString(36).substr(2, 9);
 
   useEffect(() => {
     if (open && scannerRef.current) {
-      html5QrCodeRef.current = new Html5Qrcode(scannerRef.current.id);
+      html5QrCodeRef.current = new Html5Qrcode(uniqueId);
       html5QrCodeRef.current.start(
         { facingMode: "environment" },
         { fps: 10, qrbox: 250 },
@@ -66,13 +67,13 @@ const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onS
         html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
       }
     };
-  }, [open, onScanSuccess, onScanError]);
+  }, [open, onScanSuccess, onScanError, uniqueId]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>Scan User QR Code</DialogTitle>
       <DialogContent>
-        <div id="qr-scanner" ref={scannerRef} style={{ width: '100%' }}></div>
+        <div id={uniqueId} ref={scannerRef} style={{ width: '100%' }}></div>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
           Point the camera at the user's booking QR code.
         </Typography>
