@@ -31,7 +31,7 @@ const getStatusColor = (status: Station['status']) => {
 };
 
 const Dashboard: FC = () => {
-  const { user } = useAuth();
+  const { } = useAuth();
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStation, setSelectedStation] = useState<Station | null>(null);
