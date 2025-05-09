@@ -43,7 +43,7 @@ interface QRScanDialogProps {
 const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onScanError }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<any>(null);
-  const uniqueId = typeof useId === 'function' ? useId() : 'qr-scanner-' + Math.random().toString(36).substr(2, 9);
+  const uniqueId = useId();
 
   useEffect(() => {
     if (open && scannerRef.current) {
