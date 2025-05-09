@@ -27,7 +27,7 @@ import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'fireb
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { Booking, Station } from '../../types';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 
 // @ts-ignore
 // eslint-disable-next-line
@@ -42,31 +42,32 @@ interface QRScanDialogProps {
 
 const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onScanError }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
-  const scannerInstance = useRef<any>(null);
-  const handleScanSuccess = useCallback((decodedText: string) => {
-    onScanSuccess(decodedText);
-    scannerInstance.current?.clear();
-  }, [onScanSuccess]);
+  const html5QrCodeRef = useRef<any>(null);
+
   useEffect(() => {
-    if (open) {
-      scannerInstance.current = new Html5QrcodeScanner(
-        'qr-scanner',
+    if (open && scannerRef.current) {
+      html5QrCodeRef.current = new Html5Qrcode(scannerRef.current.id);
+      html5QrCodeRef.current.start(
+        { facingMode: "environment" },
         { fps: 10, qrbox: 250 },
-        false
-      );
-      scannerInstance.current.render(
-        handleScanSuccess,
+        (decodedText: string) => {
+          onScanSuccess(decodedText);
+          html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
+        },
         (error: any) => {
-          if (typeof error === 'string' && !error.includes('decode')) {
-            onScanError(error);
-          }
+          // Optionally handle scan errors
         }
-      );
+      ).catch((err: any) => {
+        onScanError(err);
+      });
     }
     return () => {
-      scannerInstance.current?.clear();
+      if (html5QrCodeRef.current) {
+        html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
+      }
     };
-  }, [open, handleScanSuccess, onScanError]);
+  }, [open, onScanSuccess, onScanError]);
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>Scan User QR Code</DialogTitle>
@@ -95,11 +96,7 @@ const Bookings: FC = () => {
   const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
 
-  useEffect(() => {
-    fetchBookings();
-  }, [user]);
-
-  const fetchBookings = async () => {
+  const fetchBookings = useCallback(async () => {
     try {
       if (!user) return;
 
@@ -134,7 +131,11 @@ const Bookings: FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
 
   if (!user || user.role !== 'admin') {
     return (
