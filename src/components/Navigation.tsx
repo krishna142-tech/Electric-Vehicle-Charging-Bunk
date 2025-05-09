@@ -174,12 +174,12 @@ const Navigation: FC = () => {
                 src={process.env.PUBLIC_URL + '/favicon.png'}
                 alt="Logo"
                 sx={{
-                  height: 48,
-                  width: 48,
+                  height: 32,
+                  width: 32,
                   objectFit: 'contain',
-                  mr: 2,
+                  mr: 1.5,
                   borderRadius: '8px',
-                  background: 'black',
+                  background: 'transparent',
                 }}
               />
               <Typography
@@ -187,7 +187,7 @@ const Navigation: FC = () => {
                 sx={{
                   fontWeight: 400,
                   fontFamily: 'inherit',
-                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                  fontSize: { xs: '1.6rem', sm: '2rem', md: '2.2rem' },
                   letterSpacing: 0,
                   lineHeight: 1,
                   p: 0,
