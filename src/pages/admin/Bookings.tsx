@@ -28,6 +28,7 @@ import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { Booking, Station } from '../../types';
 import { Html5Qrcode } from 'html5-qrcode';
+import { useNavigate } from 'react-router-dom';
 
 // @ts-ignore
 // eslint-disable-next-line
@@ -116,6 +117,7 @@ const Bookings: FC = () => {
   const [scanError, setScanError] = useState<string | null>(null);
   const [scanSuccess, setScanSuccess] = useState<string | null>(null);
   const [scanning, setScanning] = useState(false);
+  const navigate = useNavigate();
 
   const fetchBookings = useCallback(async () => {
     try {
@@ -204,7 +206,7 @@ const Bookings: FC = () => {
         >
           Manage Bookings
         </Typography>
-        <Button variant="contained" color="primary" sx={{ mb: 2 }} onClick={() => setScanDialogOpen(true)}>
+        <Button variant="contained" color="primary" sx={{ mb: 2 }} onClick={() => navigate('/admin/scan-qr')}>
           Scan QR
         </Button>
         <QRScanDialog

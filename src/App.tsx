@@ -22,6 +22,7 @@ import UserProfile from './pages/UserProfile';
 import AdminProfile from './pages/AdminProfile';
 import PaymentPage from './pages/PaymentPage';
 import AdminStationsMap from './pages/admin/AdminStationsMap';
+import ScanQR from './pages/admin/ScanQR';
 
 const App: FC = () => {
   const [firebaseError, setFirebaseError] = useState<string>();
@@ -92,6 +93,11 @@ const App: FC = () => {
               <Route path="/admin/stations-map" element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminStationsMap />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/scan-qr" element={
+                <ProtectedRoute requiredRole="admin">
+                  <ScanQR />
                 </ProtectedRoute>
               } />
 
