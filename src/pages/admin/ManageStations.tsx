@@ -28,6 +28,14 @@ import {
   useMediaQuery
 } from '@mui/material';
 import {
+  Table,
+  TableBody,
+  TableContainer,
+  TableHead,
+  TableRow
+} from '@mui/material';
+import TableCell from '@mui/material/TableCell';
+import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -61,51 +69,6 @@ interface StationFormData {
   status: 'operational' | 'maintenance' | 'offline';
 }
 
-interface StationData {
-  name: string;
-  address: string;
-  location: {
-    lat: number;
-    lng: number;
-  };
-  latitude: number;
-  longitude: number;
-  totalSlots: number;
-  availableSlots: number;
-  rates: {
-    perHour: number;
-    currency: string;
-  };
-  operatingHours: {
-    open: string;
-    close: string;
-  };
-  status: 'operational' | 'maintenance' | 'offline';
-  lastUpdated: Timestamp;
-  createdBy?: string;
-  createdAt?: Timestamp;
-}
-
-type FormField = keyof StationFormData | 'rates.perHour' | 'operatingHours.open' | 'operatingHours.close';
-
-const initialFormState: StationFormData = {
-  name: '',
-  address: '',
-  latitude: '',
-  longitude: '',
-  totalSlots: '',
-  availableSlots: '',
-  rates: {
-    perHour: '',
-    currency: 'INR'
-  },
-  operatingHours: {
-    open: '06:00',
-    close: '22:00'
-  },
-  status: 'operational'
-};
-
 interface FormData {
   name: string;
   location: string;
@@ -114,8 +77,6 @@ interface FormData {
   hours: string;
   status: string;
 }
-
-type SetFormData = React.Dispatch<React.SetStateAction<FormData>>;
 
 const AddStationDialog: FC<{
   open: boolean;
@@ -341,22 +302,15 @@ const ManageStations: FC = () => {
   const { user } = useAuth();
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [openDialog, setOpenDialog] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStation, setEditingStation] = useState<Station | null>(null);
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    location: '',
-    totalSlots: '',
-    rate: '',
-    hours: '09:00 - 21:00',
-    status: 'Operational'
-  });
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [stationToDelete, setStationToDelete] = useState<Station | null>(null);
-  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' as 'success' | 'error' });
-  const [mapDialogOpen, setMapDialogOpen] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [snackbar, setSnackbar] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -364,29 +318,90 @@ const ManageStations: FC = () => {
     setSnackbar({ open: true, message, severity });
   };
 
+  const handleSubmit = async (data: StationFormData) => {
+    try {
+      if (!user) return;
+
+      const stationData = {
+        name: data.name,
+        address: data.address,
+        latitude: parseFloat(data.latitude),
+        longitude: parseFloat(data.longitude),
+        totalSlots: parseInt(data.totalSlots),
+        availableSlots: parseInt(data.availableSlots),
+        rates: {
+          perHour: parseFloat(data.rates.perHour),
+          currency: data.rates.currency
+        },
+        operatingHours: {
+          open: data.operatingHours.open,
+          close: data.operatingHours.close
+        },
+        status: data.status,
+        lastUpdated: Timestamp.now(),
+        createdBy: user.uid
+      };
+
+      if (editingStation) {
+        await updateDoc(doc(db, 'stations', editingStation.id), stationData);
+        showSnackbar('Station updated successfully', 'success');
+      } else {
+        await addDoc(collection(db, 'stations'), {
+          ...stationData,
+          createdAt: Timestamp.now()
+        });
+        showSnackbar('Station added successfully', 'success');
+      }
+
+      setDialogOpen(false);
+      setEditingStation(null);
+      fetchStations();
+    } catch (error) {
+      console.error('Error saving station:', error);
+      showSnackbar('Failed to save station', 'error');
+    }
+  };
+
+  const handleEdit = (station: Station) => {
+    setEditingStation(station);
+    setDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!stationToDelete) return;
+
+    try {
+      await deleteDoc(doc(db, 'stations', stationToDelete.id));
+      showSnackbar('Station deleted successfully', 'success');
+      setDeleteDialogOpen(false);
+      setStationToDelete(null);
+      fetchStations();
+    } catch (error) {
+      console.error('Error deleting station:', error);
+      showSnackbar('Failed to delete station', 'error');
+    }
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+    setEditingStation(null);
+  };
+
   const fetchStations = useCallback(async () => {
     try {
       if (!user) return;
+
       setLoading(true);
-      setError(null);
       const stationsRef = collection(db, 'stations');
-      const adminStationsQuery = query(stationsRef, where('createdBy', '==', user.uid));
-      const querySnapshot = await getDocs(adminStationsQuery);
-      const stationData = querySnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          rates: {
-            perHour: data.rates?.perHour || 0,
-            currency: data.rates?.currency || 'INR'
-          }
-        } as Station;
-      });
-      setStations(stationData);
-    } catch (err) {
-      console.error('Error fetching stations:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load stations');
+      const q = query(stationsRef, where('createdBy', '==', user.uid));
+      const querySnapshot = await getDocs(q);
+      const stationsData = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Station[];
+      setStations(stationsData);
+    } catch (error) {
+      console.error('Error fetching stations:', error);
       showSnackbar('Failed to load stations', 'error');
     } finally {
       setLoading(false);
@@ -395,145 +410,13 @@ const ManageStations: FC = () => {
 
   useEffect(() => {
     fetchStations();
-  }, [user, fetchStations]);
-
-  const handleLocationSelect = (location: { lat: number; lng: number; address?: string }) => {
-    setSelectedLocation(location);
-    setFormData(prev => ({
-      ...prev,
-      location: location.address || `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`
-    }));
-    setMapDialogOpen(false);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const validateForm = () => {
-    if (!formData.name || !formData.location || !formData.totalSlots || !formData.rate) {
-      showSnackbar('Please fill in all required fields', 'error');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (data: StationFormData) => {
-    try {
-      if (!user) return;
-
-      const updateData = {
-        name: data.name,
-        address: data.address,
-        'location.lat': parseFloat(data.latitude),
-        'location.lng': parseFloat(data.longitude),
-        latitude: parseFloat(data.latitude),
-        longitude: parseFloat(data.longitude),
-        totalSlots: parseInt(data.totalSlots),
-        availableSlots: parseInt(data.availableSlots),
-        'rates.perHour': parseFloat(data.rates.perHour),
-        'rates.currency': data.rates.currency || 'INR',
-        'operatingHours.open': data.operatingHours?.open || '09:00',
-        'operatingHours.close': data.operatingHours?.close || '21:00',
-        status: data.status || 'operational',
-        lastUpdated: Timestamp.now()
-      };
-
-      if (editingStation) {
-        if (editingStation.createdBy !== user.uid) {
-          showSnackbar('You can only edit stations created by you', 'error');
-          return;
-        }
-        await updateDoc(doc(db, 'stations', editingStation.id), updateData);
-        showSnackbar('Station updated successfully', 'success');
-      } else {
-        const newStationData = {
-          ...updateData,
-          createdBy: user.uid,
-          createdAt: Timestamp.now()
-        };
-        await addDoc(collection(db, 'stations'), newStationData);
-        showSnackbar('Station added successfully', 'success');
-      }
-
-      handleCloseDialog();
-      fetchStations();
-    } catch (error) {
-      console.error('Error submitting form:', error);
-      setError('Failed to save station data');
-    }
-  };
-
-  const handleEdit = (station: Station) => {
-    if (!user || station.createdBy !== user.uid) {
-      showSnackbar('You can only edit stations created by you', 'error');
-      return;
-    }
-    setEditingStation(station);
-    setFormData({
-      name: station.name || '',
-      location: station.address || '',
-      totalSlots: (station.totalSlots || 0).toString(),
-      rate: (station.rates?.perHour || 0).toString(),
-      hours: `${station.operatingHours?.open || '09:00'} - ${station.operatingHours?.close || '21:00'}`,
-      status: station.status || 'operational'
-    });
-    setOpenDialog(true);
-  };
-
-  const handleDelete = async () => {
-    try {
-      if (!stationToDelete || !user || stationToDelete.createdBy !== user.uid) {
-        showSnackbar('You can only delete stations created by you', 'error');
-        return;
-      }
-      await deleteDoc(doc(db, 'stations', stationToDelete.id));
-      showSnackbar('Station deleted successfully', 'success');
-      setDeleteConfirmOpen(false);
-      setStationToDelete(null);
-      fetchStations();
-    } catch (err) {
-      console.error('Error deleting station:', err);
-      showSnackbar('Failed to delete station', 'error');
-    }
-  };
-
-  const handleCloseDialog = () => {
-    setOpenDialog(false);
-    setEditingStation(null);
-    setFormData({
-      name: '',
-      location: '',
-      totalSlots: '',
-      rate: '',
-      hours: '09:00 - 21:00',
-      status: 'Operational'
-    });
-    setSelectedLocation(null);
-  };
+  }, [fetchStations]);
 
   if (!user || user.role !== 'admin') {
     return (
       <Container>
-        <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          minHeight="80vh"
-          textAlign="center"
-        >
-          <BatteryIcon sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
-          <Typography variant="h4" color="error" gutterBottom>
-            Access Denied
-          </Typography>
-          <Typography color="text.secondary">
-            Admin privileges are required to access this page.
-          </Typography>
+        <Box sx={{ p: 3 }}>
+          <Alert severity="error">Please log in as an admin to access this page.</Alert>
         </Box>
       </Container>
     );
@@ -559,372 +442,132 @@ const ManageStations: FC = () => {
   }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 3 }}>
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <Container maxWidth="lg">
+      <Box sx={{ my: 4 }}>
         <Typography
           variant="h4"
           component="h1"
           sx={{
             fontWeight: 700,
+            mb: 4,
             background: 'linear-gradient(135deg, #26C6DA, #2196F3)',
             backgroundClip: 'text',
             WebkitBackgroundClip: 'text',
             color: 'transparent',
           }}
         >
-          Manage Charging Stations
+          Manage Stations
         </Typography>
-        <Box
-          sx={{
-            mb: 4,
-            display: 'flex',
-            flexDirection: { xs: 'column', sm: 'row' },
-            justifyContent: 'flex-end',
-            alignItems: { xs: 'stretch', sm: 'center' },
-            gap: 2
-          }}
+
+        <Button
+          variant="contained"
+          startIcon={<AddIcon />}
+          onClick={() => setDialogOpen(true)}
+          sx={{ mb: 3 }}
         >
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setOpenDialog(true)}
-            sx={{
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #26C6DA, #2196F3)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #4DD0E1, #64B5F6)',
-              },
-              width: { xs: '100%', sm: 'auto' }
-            }}
-          >
-            Add New Station
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<LocationIcon />}
-            onClick={() => window.location.href = '/admin/stations-map'}
-            sx={{
-              borderRadius: '12px',
-              background: 'linear-gradient(135deg, #26C6DA, #2196F3)',
-              '&:hover': {
-                background: 'linear-gradient(135deg, #4DD0E1, #64B5F6)',
-              },
-              width: { xs: '100%', sm: 'auto' }
-            }}
-          >
-            Stations Map
-          </Button>
-        </Box>
-      </Box>
-      {isMobile ? (
+          Add New Station
+        </Button>
+
         <Box>
-          {stations.map((station) => (
-            <Card key={station.id} sx={{ mb: 2, borderRadius: 3, boxShadow: 2 }}>
-              <CardContent>
-                <Box display="flex" alignItems="center" justifyContent="space-between" mb={1}>
-                  <Typography variant="h6" fontWeight={700}>{station.name}</Typography>
-                  <Chip
-                    label={station.status}
-                    color={
-                      station.status === 'operational'
-                        ? 'success'
-                        : station.status === 'maintenance'
-                        ? 'warning'
-                        : 'error'
-                    }
-                    size="small"
-                    sx={{ fontWeight: 'medium', textTransform: 'capitalize' }}
-                  />
-                </Box>
-                <Typography variant="body2" color="text.secondary" mb={1}>
-                  <LocationIcon sx={{ fontSize: 18, mr: 1, verticalAlign: 'middle' }} />
-                  {station.address}
-                </Typography>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <BatteryIcon sx={{ fontSize: 18, mr: 1 }} />
-                  <Typography variant="body2">{station.availableSlots || 0}/{station.totalSlots || 0} slots</Typography>
-                </Box>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <AttachMoneyIcon sx={{ fontSize: 18, mr: 1 }} />
-                  <Typography variant="body2">{station.rates?.currency || 'INR'} {station.rates?.perHour || 0}/h</Typography>
-                </Box>
-                <Box display="flex" alignItems="center" mb={1}>
-                  <AccessTimeIcon sx={{ fontSize: 18, mr: 1 }} />
-                  <Typography variant="body2">{station.operatingHours?.open || '09:00'} - {station.operatingHours?.close || '21:00'}</Typography>
-                </Box>
-                <CardActions sx={{ justifyContent: 'flex-end', p: 0, pt: 2 }}>
-                  <Tooltip title="View on Map">
-                    <IconButton color="info" size="small" onClick={() => { setSelectedLocation({ lat: station.latitude, lng: station.longitude }); setMapDialogOpen(true); }}>
-                      <LocationIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Edit Station">
-                    <IconButton color="primary" size="small" onClick={() => handleEdit(station)}>
-                      <EditIcon />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete Station">
-                    <IconButton color="error" size="small" onClick={() => { setStationToDelete(station); setDeleteConfirmOpen(true); }}>
-                      <DeleteIcon />
-                    </IconButton>
-                  </Tooltip>
-                </CardActions>
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
-      ) : (
-        <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2 }}>
-          <Grid container spacing={3}>
-            {stations.map((station) => (
-              <Grid item xs={12} sm={6} md={4} key={station.id}>
-                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'visible' }}>
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Box 
-                      sx={{
-                        position: 'absolute',
-                        top: -20,
-                        right: 16,
-                        background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-                        borderRadius: '50%',
-                        p: 1,
-                        boxShadow: theme.shadows[4],
-                      }}
-                    >
-                      <BatteryIcon sx={{ fontSize: 24, color: 'white' }} />
-                    </Box>
-                    <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={2}>
-                      <Typography 
-                        variant="h6" 
-                        sx={{ 
-                          fontWeight: 'bold',
-                          color: 'text.primary'
-                        }}
-                      >
-                        {station.name}
-                      </Typography>
+          {stations.length === 0 ? (
+            <Typography variant="body1" color="text.secondary" align="center" sx={{ py: 4 }}>
+              No stations found
+            </Typography>
+          ) : (
+            <Grid container spacing={3}>
+              {stations.map((station) => (
+                <Grid item xs={12} sm={6} md={4} key={station.id}>
+                  <Box sx={{ position: 'relative' }}>
+                    <Box sx={{ position: 'absolute', top: 12, right: 16, zIndex: 2 }}>
                       <Chip
-                        label={station.status}
-                        color={
-                          station.status === 'operational'
-                            ? 'success'
-                            : station.status === 'maintenance'
-                            ? 'warning'
-                            : 'error'
-                        }
+                        label={station.status.charAt(0).toUpperCase() + station.status.slice(1)}
+                        color={station.status === 'operational' ? 'success' : station.status === 'maintenance' ? 'warning' : 'error'}
                         size="small"
-                        sx={{ 
-                          fontWeight: 'medium',
-                          textTransform: 'capitalize'
-                        }}
+                        sx={{ fontWeight: 'bold', px: 1.5, boxShadow: 1 }}
                       />
                     </Box>
-                    <Box 
-                      sx={{ 
-                        mb: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        color: 'text.secondary'
-                      }}
-                    >
-                      <LocationIcon sx={{ fontSize: 18, mr: 1 }} />
-                      <Typography variant="body2" noWrap>
-                        {station.address}
-                      </Typography>
-                    </Box>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <Box 
-                          sx={{ 
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'text.secondary'
-                          }}
-                        >
+                    <Card sx={{ mb: 2, borderRadius: 3, boxShadow: 2, minHeight: 220 }}>
+                      <CardContent>
+                        <Typography variant="h6" fontWeight={700}>{station.name}</Typography>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1, mt: 0.5, display: 'flex', alignItems: 'center' }}>
+                          <LocationIcon sx={{ fontSize: 18, mr: 1, verticalAlign: 'middle' }} />
+                          {station.address}
+                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                           <BatteryIcon sx={{ fontSize: 18, mr: 1 }} />
-                          <Typography variant="body2">
-                            {station.availableSlots || 0}/{station.totalSlots || 0}
-                          </Typography>
+                          <Typography variant="body2">{station.availableSlots || 0}/{station.totalSlots || 0}</Typography>
+                          <AttachMoneyIcon sx={{ fontSize: 18, ml: 2, mr: 1 }} />
+                          <Typography variant="body2">{station.rates?.currency || 'INR'} {station.rates?.perHour || 0}/h</Typography>
                         </Box>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box 
-                          sx={{ 
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'text.secondary'
-                          }}
-                        >
-                          <AttachMoneyIcon sx={{ fontSize: 18, mr: 1 }} />
-                          <Typography variant="body2">
-                            {station.rates?.currency || 'INR'} {station.rates?.perHour || 0}/h
-                          </Typography>
-                        </Box>
-                      </Grid>
-                      <Grid item xs={12}>
-                        <Box 
-                          sx={{ 
-                            display: 'flex',
-                            alignItems: 'center',
-                            color: 'text.secondary'
-                          }}
-                        >
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                           <AccessTimeIcon sx={{ fontSize: 18, mr: 1 }} />
-                          <Typography variant="body2">
-                            {station.operatingHours?.open || '09:00'} - {station.operatingHours?.close || '21:00'}
-                          </Typography>
+                          <Typography variant="body2">{station.operatingHours?.open || '09:00'} - {station.operatingHours?.close || '21:00'}</Typography>
                         </Box>
-                      </Grid>
-                    </Grid>
-                  </CardContent>
-                  <CardActions 
-                    sx={{ 
-                      borderTop: `1px solid ${theme.palette.divider}`,
-                      justifyContent: 'flex-end',
-                      p: 2
-                    }}
-                  >
-                    <Tooltip title="View on Map">
-                      <IconButton 
-                        color="info"
-                        size="small"
-                        onClick={() => {
-                          setSelectedLocation({ lat: station.latitude, lng: station.longitude });
-                          setMapDialogOpen(true);
-                        }}
-                      >
-                        <LocationIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Edit Station">
-                      <IconButton 
-                        color="primary"
-                        size="small"
-                        onClick={() => handleEdit(station)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete Station">
-                      <IconButton 
-                        color="error"
-                        size="small"
-                        onClick={() => {
-                          setStationToDelete(station);
-                          setDeleteConfirmOpen(true);
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </CardActions>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Paper>
-      )}
+                      </CardContent>
+                      <CardActions sx={{ justifyContent: 'flex-end', px: 2, pb: 2 }}>
+                        <Tooltip title="View on Map">
+                          <IconButton color="info" size="small" onClick={() => window.open(`https://www.google.com/maps/search/?api=1&query=${station.latitude},${station.longitude}`, '_blank')}>
+                            <LocationIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Edit">
+                          <IconButton color="primary" size="small" onClick={() => handleEdit(station)}>
+                            <EditIcon />
+                          </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <IconButton color="error" size="small" onClick={() => { setStationToDelete(station); setDeleteDialogOpen(true); }}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </CardActions>
+                    </Card>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </Box>
 
-      <AddStationDialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        onSubmit={handleSubmit}
-        initialData={editingStation || undefined}
-      />
+        <AddStationDialog
+          open={dialogOpen}
+          onClose={handleCloseDialog}
+          onSubmit={handleSubmit}
+          initialData={editingStation || undefined}
+        />
 
-      <Dialog 
-        open={deleteConfirmOpen} 
-        onClose={() => setDeleteConfirmOpen(false)}
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: theme.shadows[24],
-          }
-        }}
-      >
-        <DialogTitle sx={{ p: 3 }}>
-          <Box display="flex" alignItems="center">
-            <DeleteIcon sx={{ mr: 2, color: 'error.main' }} />
-            <Typography variant="h5">Confirm Delete</Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
-          <Typography>
-            Are you sure you want to delete the station "{stationToDelete?.name}"? 
-            This action cannot be undone.
-          </Typography>
-        </DialogContent>
-        <DialogActions sx={{ p: 3, pt: 0 }}>
-          <Button 
-            onClick={() => setDeleteConfirmOpen(false)}
-            variant="outlined"
-            sx={{ mr: 1 }}
-          >
-            Cancel
-          </Button>
-          <Button 
-            onClick={handleDelete} 
-            color="error" 
-            variant="contained"
-            startIcon={<DeleteIcon />}
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Dialog 
-        open={mapDialogOpen} 
-        onClose={() => setMapDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: theme.shadows[24],
-          }
-        }}
-      >
-        <DialogTitle sx={{ p: 3 }}>
-          <Box display="flex" alignItems="center">
-            <LocationIcon sx={{ mr: 2, color: 'info.main' }} />
-            <Typography variant="h5">Select Location</Typography>
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ p: 0 }}>
-          <Box sx={{ height: '500px', width: '100%' }}>
-            <Map stations={stations} />
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 3 }}>
-          <Button 
-            onClick={() => setMapDialogOpen(false)}
-            variant="contained"
-            color="primary"
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
-          severity={snackbar.severity}
-          sx={{ 
-            width: '100%',
-            borderRadius: 2,
-            boxShadow: theme.shadows[8],
-          }}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <DialogTitle>Delete Station</DialogTitle>
+          <DialogContent>
+            <Typography>
+              Are you sure you want to delete this station? This action cannot be undone.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleDelete} color="error">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        >
+          <Alert
+            onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+            severity={snackbar.severity}
+            sx={{ width: '100%' }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </Box>
     </Container>
   );
 };
