@@ -40,16 +40,28 @@ interface QRScanDialogProps {
   onScanError: (err: string) => void;
 }
 
+function getUniqueId() {
+  return 'qr-scanner-' + Math.random().toString(36).substr(2, 9);
+}
+
 const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onScanError }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<any>(null);
+  const uniqueIdRef = useRef(getUniqueId());
 
   useEffect(() => {
     if (open && scannerRef.current) {
-      // Delay to ensure dialog and div are rendered
-      const timeout = setTimeout(() => {
+      // Wait for the next animation frame to ensure the div is in the DOM
+      const raf = requestAnimationFrame(() => {
+        const id = uniqueIdRef.current;
+        const el = document.getElementById(id);
+        if (!el) {
+          console.error('QR scanner div not found in DOM!');
+          onScanError('QR scanner div not found');
+          return;
+        }
         try {
-          html5QrCodeRef.current = new Html5Qrcode("qr-scanner");
+          html5QrCodeRef.current = new Html5Qrcode(id);
           html5QrCodeRef.current.start(
             { facingMode: "environment" },
             { fps: 10, qrbox: 250 },
@@ -57,9 +69,7 @@ const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onS
               onScanSuccess(decodedText);
               html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
             },
-            (error: any) => {
-              // Optionally handle scan errors
-            }
+            (error: any) => {}
           ).catch((err: any) => {
             console.error('Html5Qrcode start error:', err);
             onScanError(String(err));
@@ -68,10 +78,10 @@ const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onS
           console.error('Html5Qrcode init error:', err);
           onScanError(String(err));
         }
-      }, 300); // 300ms delay
+      });
 
       return () => {
-        clearTimeout(timeout);
+        cancelAnimationFrame(raf);
         if (html5QrCodeRef.current) {
           html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
         }
@@ -83,7 +93,7 @@ const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onS
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>Scan User QR Code</DialogTitle>
       <DialogContent>
-        <div id="qr-scanner" ref={scannerRef} style={{ width: '100%' }}></div>
+        <div id={uniqueIdRef.current} ref={scannerRef} style={{ width: '100%' }}></div>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
           Point the camera at the user's booking QR code.
         </Typography>
