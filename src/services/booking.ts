@@ -8,7 +8,7 @@ export const checkAndUpdateExpiredBookings = async () => {
     const now = new Date();
     const q = query(
       bookingsRef,
-      where('status', '==', 'confirmed'),
+      where('status', 'in', ['confirmed', 'verified']),
       where('endTime', '<=', now.toISOString())
     );
 
