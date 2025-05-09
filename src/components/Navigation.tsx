@@ -158,38 +158,51 @@ const Navigation: FC = () => {
               }
             }}
           >
-            <EvStation 
-              className="logo-icon"
-              sx={{ 
-                fontSize: '2.2rem',
-                background: 'linear-gradient(135deg, #26C6DA, #2196F3)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                color: 'transparent',
-                transition: 'all 0.3s ease'
-              }} 
-            />
-            <Typography
-              variant="h5"
-              component={RouterLink}
-              to="/"
+            <Box
               sx={{
-                fontWeight: 700,
-                textDecoration: 'none',
-                background: 'linear-gradient(135deg, #26C6DA, #2196F3)',
-                backgroundSize: '200% 200%',
-                animation: `${gradientShift} 5s ease infinite`,
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                color: 'transparent',
-                transition: 'all 0.3s ease',
-                '&:hover': {
-                  transform: 'translateX(3px)'
-                }
+                display: 'flex',
+                alignItems: 'center',
+                borderRadius: '12px',
+                px: 2,
+                py: 0.5,
+                height: 56,
+                background: 'transparent',
               }}
             >
-              Ampora
-            </Typography>
+              <Box
+                component="img"
+                src={process.env.PUBLIC_URL + '/favicon.png'}
+                alt="Logo"
+                sx={{
+                  height: 48,
+                  width: 48,
+                  objectFit: 'contain',
+                  mr: 2,
+                  borderRadius: '8px',
+                  background: 'black',
+                }}
+              />
+              <Typography
+                variant="h3"
+                sx={{
+                  fontWeight: 400,
+                  fontFamily: 'inherit',
+                  fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+                  letterSpacing: 0,
+                  lineHeight: 1,
+                  p: 0,
+                  m: 0,
+                  userSelect: 'none',
+                  background: 'linear-gradient(90deg, #00bfae 0%, #00bfff 50%, #009688 100%)',
+                  WebkitBackgroundClip: 'text',
+                  backgroundClip: 'text',
+                  color: 'transparent',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                Ampora
+              </Typography>
+            </Box>
           </Box>
 
           {isMobile ? (
