@@ -43,37 +43,47 @@ interface QRScanDialogProps {
 const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onScanError }) => {
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<any>(null);
-  const uniqueId = useId();
 
   useEffect(() => {
     if (open && scannerRef.current) {
-      html5QrCodeRef.current = new Html5Qrcode(uniqueId);
-      html5QrCodeRef.current.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: 250 },
-        (decodedText: string) => {
-          onScanSuccess(decodedText);
-          html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
-        },
-        (error: any) => {
-          // Optionally handle scan errors
+      // Delay to ensure dialog and div are rendered
+      const timeout = setTimeout(() => {
+        try {
+          html5QrCodeRef.current = new Html5Qrcode("qr-scanner");
+          html5QrCodeRef.current.start(
+            { facingMode: "environment" },
+            { fps: 10, qrbox: 250 },
+            (decodedText: string) => {
+              onScanSuccess(decodedText);
+              html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
+            },
+            (error: any) => {
+              // Optionally handle scan errors
+            }
+          ).catch((err: any) => {
+            console.error('Html5Qrcode start error:', err);
+            onScanError(String(err));
+          });
+        } catch (err) {
+          console.error('Html5Qrcode init error:', err);
+          onScanError(String(err));
         }
-      ).catch((err: any) => {
-        onScanError(err);
-      });
+      }, 300); // 300ms delay
+
+      return () => {
+        clearTimeout(timeout);
+        if (html5QrCodeRef.current) {
+          html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
+        }
+      };
     }
-    return () => {
-      if (html5QrCodeRef.current) {
-        html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
-      }
-    };
-  }, [open, onScanSuccess, onScanError, uniqueId]);
+  }, [open, onScanSuccess, onScanError]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <DialogTitle>Scan User QR Code</DialogTitle>
       <DialogContent>
-        <div id={uniqueId} ref={scannerRef} style={{ width: '100%' }}></div>
+        <div id="qr-scanner" ref={scannerRef} style={{ width: '100%' }}></div>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
           Point the camera at the user's booking QR code.
         </Typography>
