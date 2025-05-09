@@ -67,9 +67,25 @@ const Map: FC<MapProps> = ({ stations = [], onStationSelect }) => {
     }
   };
 
+  const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || '';
+  if (!apiKey) {
+    return (
+      <Box sx={{ width: '100%', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Alert severity="error">Google Maps API key is missing. Please set REACT_APP_GOOGLE_MAPS_API_KEY in your .env file.</Alert>
+      </Box>
+    );
+  }
+  if (!stations || stations.length === 0) {
+    return (
+      <Box sx={{ width: '100%', height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <Alert severity="info">No stations found to display on the map.</Alert>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ width: '100%', height: '400px', position: 'relative' }}>
-      <LoadScript googleMapsApiKey={process.env.REACT_APP_GOOGLE_MAPS_API_KEY || ''}>
+      <LoadScript googleMapsApiKey={apiKey}>
         <GoogleMap
           mapContainerStyle={containerStyle}
           center={userLocation || defaultCenter}

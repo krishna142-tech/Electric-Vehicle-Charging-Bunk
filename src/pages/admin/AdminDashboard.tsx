@@ -64,7 +64,7 @@ const AdminDashboard: FC = () => {
       const bookingsRef = collection(db, 'bookings');
       const activeBookingsQuery = query(
         bookingsRef,
-        where('status', '==', 'confirmed'),
+        where('status', 'in', ['confirmed', 'verified']),
         where('stationId', 'in', stationIds)
       );
       const unsubscribeBookings = onSnapshot(activeBookingsQuery, (activeBookingsSnapshot) => {
