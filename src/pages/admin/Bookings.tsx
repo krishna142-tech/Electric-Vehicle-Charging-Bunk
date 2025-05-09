@@ -137,6 +137,11 @@ const Bookings: FC = () => {
       }, {} as { [key: string]: Station });
 
       // Get all bookings for these stations
+      if (stationIds.length === 0) {
+        setBookings([]);
+        setLoading(false);
+        return;
+      }
       const bookingsRef = collection(db, 'bookings');
       const bookingsQuery = query(bookingsRef, where('stationId', 'in', stationIds), orderBy('startTime', 'desc'));
       const bookingsSnapshot = await getDocs(bookingsQuery);

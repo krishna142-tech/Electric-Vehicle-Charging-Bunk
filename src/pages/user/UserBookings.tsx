@@ -29,6 +29,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useTheme } from '@mui/material/styles';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
+import BookingQRCode from '../../components/BookingQRCode';
 
 interface Booking {
   id: string;
@@ -42,6 +43,8 @@ interface Booking {
   qrCode?: string;
   endTime?: string;
   expired: boolean;
+  startTime?: string;
+  createdAt?: string;
 }
 
 const BookingTicketModal: FC<{
@@ -170,35 +173,52 @@ const UserBookings: FC = () => {
                 No bookings found
               </Typography>
             ) : (
-              bookings.map((booking) => {
-                const isExpired = (booking.expiresAt && new Date(booking.expiresAt).getTime() < Date.now()) || (booking.endTime && new Date(booking.endTime).getTime() < Date.now()) || booking.expired;
-                const isVerified = booking.status === 'verified';
-                return (
-                  <Card key={booking.id} sx={{ mb: 2, borderRadius: 2, boxShadow: 2 }}>
-                    <CardContent>
-                      <Typography variant="subtitle2" color="text.secondary">STATION</Typography>
-                      <Typography variant="h6">{booking.stationName}</Typography>
-                      <Typography sx={{ mt: 1 }}>Time: {new Date(booking.bookingTime).toLocaleString()}</Typography>
-                      <Typography>Duration: {booking.duration >= 60 ? `${booking.duration / 60} hr` : `${booking.duration} min`}</Typography>
-                      <Typography>Valid Till: {booking.endTime ? new Date(booking.endTime).toLocaleString() : (booking.expiresAt ? new Date(booking.expiresAt).toLocaleString() : '-')}</Typography>
-                      <Typography>Amount: ₹{booking.totalCost}</Typography>
-                      <Typography>Status: {
-                        isVerified && isExpired ? (
-                          <Chip label="Verified & Expired" color="success" size="small" />
-                        ) : isExpired ? (
-                          <Chip label="Expired" color="error" size="small" />
-                        ) : (
-                          <Chip label={booking.status} color={booking.status === 'confirmed' ? 'success' : 'default'} size="small" />
-                        )
-                      }</Typography>
-                      <Typography>Payment: <Chip label={booking.paymentStatus} color={booking.paymentStatus === 'completed' ? 'success' : 'warning'} size="small" /></Typography>
-                      <Button size="small" variant="outlined" sx={{ mt: 2 }} onClick={() => { setSelectedBooking(booking); setTicketModalOpen(true); }}>
-                        View Details
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })
+              bookings
+                .slice()
+                .sort((a, b) => {
+                  const bTime = new Date(b.startTime ?? b.bookingTime ?? b.createdAt ?? 0).getTime();
+                  const aTime = new Date(a.startTime ?? a.bookingTime ?? a.createdAt ?? 0).getTime();
+                  return bTime - aTime;
+                })
+                .map((booking) => {
+                  const isExpired = (booking.expiresAt && new Date(booking.expiresAt).getTime() < Date.now()) || (booking.endTime && new Date(booking.endTime).getTime() < Date.now()) || booking.expired;
+                  const isVerified = booking.status === 'verified';
+                  return (
+                    <Card key={booking.id} sx={{ mb: 2, borderRadius: 2, boxShadow: 2 }}>
+                      <CardContent>
+                        <Typography variant="subtitle2" color="text.secondary">STATION</Typography>
+                        <Typography variant="h6">{booking.stationName}</Typography>
+                        <Typography sx={{ mt: 1 }}>Time: {new Date(booking.bookingTime).toLocaleString()}</Typography>
+                        <Typography>Duration: {booking.duration >= 60 ? `${booking.duration / 60} hr` : `${booking.duration} min`}</Typography>
+                        <Typography>Valid Till: {booking.endTime ? new Date(booking.endTime).toLocaleString() : (booking.expiresAt ? new Date(booking.expiresAt).toLocaleString() : '-')}</Typography>
+                        <Typography>Amount: ₹{booking.totalCost}</Typography>
+                        <Typography>Status: {
+                          isVerified && isExpired ? (
+                            <Chip label="Verified & Expired" color="success" size="small" />
+                          ) : isExpired ? (
+                            <Chip label="Expired" color="error" size="small" />
+                          ) : (
+                            <Chip label={booking.status} color={booking.status === 'confirmed' ? 'success' : 'default'} size="small" />
+                          )
+                        }</Typography>
+                        <Typography>Payment: <Chip label={booking.paymentStatus} color={booking.paymentStatus === 'completed' ? 'success' : 'warning'} size="small" /></Typography>
+                        <Button size="small" variant="outlined" sx={{ mt: 2 }} onClick={() => { setSelectedBooking(booking); setTicketModalOpen(true); }}>
+                          View Details
+                        </Button>
+                        {booking.status === 'confirmed' && (
+                          <Box sx={{ mt: 2 }}>
+                            <BookingQRCode
+                              bookingId={booking.id}
+                              stationName={booking.stationName || 'Unknown Station'}
+                              startTime={booking.bookingTime || new Date().toISOString()}
+                              endTime={booking.endTime || new Date().toISOString()}
+                            />
+                          </Box>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })
             )}
             <BookingTicketModal open={ticketModalOpen} onClose={() => setTicketModalOpen(false)} booking={selectedBooking} />
           </Box>
@@ -228,39 +248,46 @@ const UserBookings: FC = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  bookings.map((booking) => {
-                    const isExpired = (booking.expiresAt && new Date(booking.expiresAt).getTime() < Date.now()) || (booking.endTime && new Date(booking.endTime).getTime() < Date.now()) || booking.expired;
-                    const isVerified = booking.status === 'verified';
-                    return (
-                      <TableRow key={booking.id}>
-                        <TableCell>{booking.stationName}</TableCell>
-                        <TableCell>{new Date(booking.bookingTime).toLocaleString()}</TableCell>
-                        <TableCell>{booking.duration >= 60 ? `${booking.duration / 60} hr` : `${booking.duration} min`}</TableCell>
-                        <TableCell>{booking.endTime ? new Date(booking.endTime).toLocaleString() : (booking.expiresAt ? new Date(booking.expiresAt).toLocaleString() : '-')}</TableCell>
-                        <TableCell>{booking.totalCost}</TableCell>
-                        <TableCell>
-                          {isVerified && isExpired ? (
-                            <Chip label="Verified & Expired" color="success" size="small" />
-                          ) : isExpired ? (
-                            <Chip label="Expired" color="error" size="small" />
-                          ) : (
-                            <Chip label={booking.status} color={booking.status === 'confirmed' ? 'success' : 'default'} size="small" />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={booking.paymentStatus} color={booking.paymentStatus === 'completed' ? 'success' : 'warning'} size="small" />
-                        </TableCell>
-                        <TableCell>
-                          <QRCodeCanvas value={booking.qrCode || booking.id} size={48} style={{ cursor: 'pointer' }} onClick={() => { setSelectedBooking(booking); setTicketModalOpen(true); }} />
-                        </TableCell>
-                        <TableCell>
-                          <Button size="small" variant="outlined" onClick={() => { setSelectedBooking(booking); setTicketModalOpen(true); }}>
-                            View Details
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
+                  bookings
+                    .slice()
+                    .sort((a, b) => {
+                      const bTime = new Date(b.startTime ?? b.bookingTime ?? b.createdAt ?? 0).getTime();
+                      const aTime = new Date(a.startTime ?? a.bookingTime ?? a.createdAt ?? 0).getTime();
+                      return bTime - aTime;
+                    })
+                    .map((booking) => {
+                      const isExpired = (booking.expiresAt && new Date(booking.expiresAt).getTime() < Date.now()) || (booking.endTime && new Date(booking.endTime).getTime() < Date.now()) || booking.expired;
+                      const isVerified = booking.status === 'verified';
+                      return (
+                        <TableRow key={booking.id}>
+                          <TableCell>{booking.stationName}</TableCell>
+                          <TableCell>{new Date(booking.bookingTime).toLocaleString()}</TableCell>
+                          <TableCell>{booking.duration >= 60 ? `${booking.duration / 60} hr` : `${booking.duration} min`}</TableCell>
+                          <TableCell>{booking.endTime ? new Date(booking.endTime).toLocaleString() : (booking.expiresAt ? new Date(booking.expiresAt).toLocaleString() : '-')}</TableCell>
+                          <TableCell>{booking.totalCost}</TableCell>
+                          <TableCell>
+                            {isVerified && isExpired ? (
+                              <Chip label="Verified & Expired" color="success" size="small" />
+                            ) : isExpired ? (
+                              <Chip label="Expired" color="error" size="small" />
+                            ) : (
+                              <Chip label={booking.status} color={booking.status === 'confirmed' ? 'success' : 'default'} size="small" />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Chip label={booking.paymentStatus} color={booking.paymentStatus === 'completed' ? 'success' : 'warning'} size="small" />
+                          </TableCell>
+                          <TableCell>
+                            <QRCodeCanvas value={booking.qrCode || booking.id} size={48} style={{ cursor: 'pointer' }} onClick={() => { setSelectedBooking(booking); setTicketModalOpen(true); }} />
+                          </TableCell>
+                          <TableCell>
+                            <Button size="small" variant="outlined" onClick={() => { setSelectedBooking(booking); setTicketModalOpen(true); }}>
+                              View Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
                 )}
               </TableBody>
             </Table>
