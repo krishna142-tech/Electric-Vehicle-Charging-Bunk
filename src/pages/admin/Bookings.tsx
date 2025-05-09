@@ -23,7 +23,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { Booking, Station } from '../../types';
@@ -138,7 +138,7 @@ const Bookings: FC = () => {
 
       // Get all bookings for these stations
       const bookingsRef = collection(db, 'bookings');
-      const bookingsQuery = query(bookingsRef, where('stationId', 'in', stationIds));
+      const bookingsQuery = query(bookingsRef, where('stationId', 'in', stationIds), orderBy('startTime', 'desc'));
       const bookingsSnapshot = await getDocs(bookingsQuery);
 
       const bookingsData = bookingsSnapshot.docs.map(doc => ({
@@ -222,6 +222,12 @@ const Bookings: FC = () => {
                 const bookingSnap = await getDoc(bookingRef);
                 if (!bookingSnap.exists()) {
                   setScanError('Booking not found.');
+                  setScanning(false);
+                  return;
+                }
+                const bookingData = bookingSnap.data();
+                if (bookingData.status === 'verified') {
+                  setScanError('Booking already verified.');
                   setScanning(false);
                   return;
                 }
