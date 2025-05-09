@@ -23,6 +23,7 @@ import AdminProfile from './pages/AdminProfile';
 import PaymentPage from './pages/PaymentPage';
 import AdminStationsMap from './pages/admin/AdminStationsMap';
 import ScanQR from './pages/admin/ScanQR';
+import { startExpiredBookingsCheck } from './services/booking';
 
 const App: FC = () => {
   const [firebaseError, setFirebaseError] = useState<string>();
@@ -33,6 +34,12 @@ const App: FC = () => {
         setFirebaseError(error);
       }
     });
+
+    // Start checking for expired bookings
+    const interval = startExpiredBookingsCheck();
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(interval);
   }, []);
 
   return (
