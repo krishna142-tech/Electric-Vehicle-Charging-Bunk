@@ -72,7 +72,14 @@ export interface Booking {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   paymentStatus: 'pending' | 'completed' | 'failed';
   amount: number;
+  totalCost: number;
   createdAt: Date;
+  stationName?: string;
+  bookingTime?: string;
+  duration?: number;
+  expiresAt?: string;
+  expired?: boolean;
+  verifiedAt?: string;
 }
 
 export interface PaymentSession {

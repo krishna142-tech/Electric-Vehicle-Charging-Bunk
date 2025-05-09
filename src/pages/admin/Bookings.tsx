@@ -269,7 +269,7 @@ const Bookings: FC = () => {
                     <Typography sx={{ mt: 1 }}>User: {booking.userId}</Typography>
                     <Typography>Start: {booking.startTime ? new Date(booking.startTime).toLocaleString() : '-'}</Typography>
                     <Typography>End: {booking.endTime ? new Date(booking.endTime).toLocaleString() : '-'}</Typography>
-                    <Typography>Amount: {booking.amount} {booking.station?.rates?.currency || 'INR'}</Typography>
+                    <Typography>Amount: ₹{booking.totalCost}</Typography>
                     <Typography>Status: <Chip label={booking.status} color={booking.status === 'confirmed' ? 'success' : booking.status === 'pending' ? 'warning' : booking.status === 'cancelled' ? 'error' : 'default'} size="small" /></Typography>
                     <Typography>Payment: <Chip label={booking.paymentStatus} color={booking.paymentStatus === 'completed' ? 'success' : booking.paymentStatus === 'pending' ? 'warning' : 'error'} size="small" /></Typography>
                   </CardContent>
@@ -320,7 +320,7 @@ const Bookings: FC = () => {
                         {booking.endTime ? new Date(booking.endTime).toLocaleString() : '-'}
                       </TableCell>
                       <TableCell>
-                        {booking.amount} {booking.station?.rates.currency || 'INR'}
+                        ₹{booking.totalCost}
                       </TableCell>
                       <TableCell>
                         <Chip
