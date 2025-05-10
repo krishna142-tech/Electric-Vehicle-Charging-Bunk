@@ -319,6 +319,22 @@ const Navigation: FC = () => {
                           <BookOnline />
                           <Typography>Bookings</Typography>
                         </MenuItem>
+                        <MenuItem
+                          key="admin-scan-qr"
+                          component={RouterLink}
+                          to="/admin/scan-qr"
+                          onClick={handleMobileMenuClose}
+                          selected={isCurrentPath('/admin/scan-qr')}
+                          sx={{
+                            py: 1.5,
+                            px: 2,
+                            gap: 1.5,
+                            borderLeft: isCurrentPath('/admin/scan-qr') ? '3px solid #26C6DA' : '3px solid transparent'
+                          }}
+                        >
+                          <QrCodeScanner />
+                          <Typography>Scan QR</Typography>
+                        </MenuItem>
                       </>
                     )}
                     {user.role !== 'admin' && (
@@ -566,23 +582,14 @@ const Navigation: FC = () => {
                     <>
                       <Button
                         color="primary"
+                        component={RouterLink}
+                        to="/admin/scan-qr"
                         startIcon={<QrCodeScanner />}
                         variant="outlined"
                         sx={{ borderRadius: '12px', px: 2, py: 1, fontWeight: 600 }}
-                        onClick={() => setScanDialogOpen(true)}
                       >
                         Scan QR
                       </Button>
-                      <QRScanDialog
-                        open={scanDialogOpen}
-                        onClose={() => setScanDialogOpen(false)}
-                        onScanSuccess={(data: string) => {
-                          setScanDialogOpen(false);
-                        }}
-                        onScanError={(err: string) => {
-                          console.error('QR scan error:', err);
-                        }}
-                      />
                     </>
                   )}
                   <Tooltip title="Account settings">
