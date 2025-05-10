@@ -29,8 +29,8 @@ export const checkAndUpdateExpiredBookings = async () => {
     const bookingsRef = collection(db, 'bookings');
     const q = query(
       bookingsRef,
-      where('status', '==', 'confirmed'),
-      where('endTime', '<', now)
+      where('status', 'in', ['confirmed', 'verified']),
+      where('endTime', '<', now.toISOString())
     );
 
     const querySnapshot = await getDocs(q);
@@ -66,8 +66,10 @@ export const checkAndUpdateExpiredBookings = async () => {
       }
     }
 
-    await batch.commit();
-    console.log(`Updated ${querySnapshot.size} expired bookings`);
+    if (querySnapshot.size > 0) {
+      await batch.commit();
+      console.log(`Updated ${querySnapshot.size} expired bookings`);
+    }
   } catch (error) {
     console.error('Error updating expired bookings:', error);
     throw error;
@@ -130,6 +132,33 @@ export const verifyBooking = async (bookingId: string, adminId: string) => {
     return true;
   } catch (error) {
     console.error('Error verifying booking:', error);
+    throw error;
+  }
+};
+
+// Add new function to update station slots
+export const updateStationSlots = async (stationId: string, newAvailableSlots: number) => {
+  try {
+    const stationRef = doc(db, 'stations', stationId);
+    const stationDoc = await getDoc(stationRef);
+    
+    if (!stationDoc.exists()) {
+      throw new Error('Station not found');
+    }
+
+    const station = stationDoc.data() as Station;
+    
+    // Ensure new available slots is between 0 and total slots
+    const validSlots = Math.max(0, Math.min(station.totalSlots, newAvailableSlots));
+    
+    await updateDoc(stationRef, {
+      availableSlots: validSlots,
+      updatedAt: new Date()
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error updating station slots:', error);
     throw error;
   }
 }; 
