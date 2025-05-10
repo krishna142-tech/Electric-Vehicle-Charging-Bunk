@@ -32,10 +32,18 @@ export const checkAndUpdateExpiredBookings = async () => {
 
       // Update station's available slots
       const stationRef = doc(db, 'stations', booking.stationId);
-      await updateDoc(stationRef, {
-        availableSlots: increment(1)
-      });
-      console.log('Incremented availableSlots for station:', booking.stationId);
+      const stationSnap = await getDoc(stationRef);
+      if (stationSnap.exists()) {
+        const station = stationSnap.data();
+        if (station.availableSlots < station.totalSlots) {
+          await updateDoc(stationRef, {
+            availableSlots: increment(1)
+          });
+          console.log('Incremented availableSlots for station:', booking.stationId);
+        } else {
+          console.log('availableSlots already at max for station:', booking.stationId);
+        }
+      }
     }
 
     return expiredBookings.length;
@@ -69,19 +77,11 @@ export const verifyBooking = async (bookingId: string) => {
       throw new Error('Booking not found');
     }
 
-    const booking = bookingSnap.data();
-    
-    // Update booking status
+    // Only update booking status, do NOT increment slots here
     await updateDoc(bookingRef, {
       status: 'verified',
       expired: true,
       verifiedAt: new Date().toISOString()
-    });
-
-    // Update station's available slots
-    const stationRef = doc(db, 'stations', booking.stationId);
-    await updateDoc(stationRef, {
-      availableSlots: increment(1)
     });
 
     return true;
