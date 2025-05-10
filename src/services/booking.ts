@@ -31,11 +31,13 @@ export const checkAndUpdateExpiredBookings = async () => {
         const stationSnap = await getDoc(stationRef);
         if (stationSnap.exists()) {
           const station = stationSnap.data();
-          if (station.availableSlots < station.totalSlots) {
+          // Ensure availableSlots doesn't exceed totalSlots
+          const newAvailableSlots = Math.min((station.availableSlots || 0) + 1, station.totalSlots);
+          if (newAvailableSlots !== station.availableSlots) {
             await updateDoc(stationRef, {
-              availableSlots: increment(1)
+              availableSlots: newAvailableSlots
             });
-            console.log('Incremented availableSlots for station:', booking.stationId);
+            console.log('Updated availableSlots for station:', booking.stationId, 'to', newAvailableSlots);
           } else {
             console.log('availableSlots already at max for station:', booking.stationId);
           }
