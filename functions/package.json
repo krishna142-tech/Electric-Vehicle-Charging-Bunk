@@ -2,15 +2,16 @@
   "name": "functions",
   "description": "Cloud Functions for Ampora OTP and backend logic",
   "scripts": {
+    "build": "tsc",
     "lint": "echo \"No linting configured\""
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "firebase-admin": "^11.10.1",
     "firebase-functions": "^4.4.1",
-    "cors": "^2.8.5",
     "nodemailer": "^7.0.3"
   },
   "engines": {
     "node": "18"
   }
-} 
+}

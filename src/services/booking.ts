@@ -3,22 +3,27 @@ import { db } from '../config/firebase';
 
 export const checkAndUpdateExpiredBookings = async () => {
   try {
+    console.log('Running checkAndUpdateExpiredBookings...');
     // Get all confirmed bookings that have expired
     const bookingsRef = collection(db, 'bookings');
     const now = new Date();
+    const nowIso = now.toISOString();
+    console.log('Current time (ISO):', nowIso);
     const q = query(
       bookingsRef,
       where('status', 'in', ['confirmed', 'verified']),
-      where('endTime', '<=', now.toISOString())
+      where('endTime', '<=', nowIso)
     );
 
     const querySnapshot = await getDocs(q);
     const expiredBookings = querySnapshot.docs;
+    console.log('Found', expiredBookings.length, 'expired bookings');
 
     // Process each expired booking
     for (const bookingDoc of expiredBookings) {
       const booking = bookingDoc.data();
-      
+      console.log('Processing booking:', bookingDoc.id, booking);
+      console.log('Booking endTime:', booking.endTime, 'Type:', typeof booking.endTime);
       // Update booking status
       await updateDoc(doc(db, 'bookings', bookingDoc.id), {
         status: 'completed',
@@ -30,6 +35,7 @@ export const checkAndUpdateExpiredBookings = async () => {
       await updateDoc(stationRef, {
         availableSlots: increment(1)
       });
+      console.log('Incremented availableSlots for station:', booking.stationId);
     }
 
     return expiredBookings.length;
@@ -41,14 +47,14 @@ export const checkAndUpdateExpiredBookings = async () => {
 
 // Function to start periodic checking of expired bookings
 export const startExpiredBookingsCheck = () => {
-  // Check every 30 seconds
+  // Check every 5 seconds for debugging
   const interval = setInterval(async () => {
     try {
       await checkAndUpdateExpiredBookings();
     } catch (error) {
       console.error('Error in periodic booking check:', error);
     }
-  }, 30000); // 30000 ms = 30 seconds
+  }, 5000); // 5000 ms = 5 seconds
 
   return interval;
 };

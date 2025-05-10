@@ -171,7 +171,9 @@ const Register: FC = () => {
               label="Role"
             >
               <MenuItem value="user">User</MenuItem>
-              <MenuItem value="admin">Admin</MenuItem>
+              <MenuItem value="admin" disabled sx={{ opacity: 0.7, cursor: 'not-allowed' }}>
+                Admin (Contact Support)
+              </MenuItem>
             </Select>
           </FormControl>
           <Button
