@@ -23,7 +23,7 @@ import {
   DialogContent,
   DialogActions,
 } from '@mui/material';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../../config/firebase';
 import { useAuth } from '../../context/AuthContext';
 import { Booking, Station } from '../../types';
@@ -137,24 +137,21 @@ const Bookings: FC = () => {
   const [scanning, setScanning] = useState(false);
   const navigate = useNavigate();
 
-  const fetchBookings = useCallback(async () => {
-    try {
-      if (!user) return;
+  const fetchBookings = useCallback(() => {
+    let unsubscribe: (() => void) | undefined;
+    if (!user) return () => {};
+    setLoading(true);
+    setError(null);
 
-      setLoading(true);
-      setError(null);
-
-      // Get all stations owned by the admin
-      const stationsRef = collection(db, 'stations');
-      const stationsQuery = query(stationsRef, where('createdBy', '==', user.uid));
-      const stationsSnapshot = await getDocs(stationsQuery);
+    const stationsRef = collection(db, 'stations');
+    const stationsQuery = query(stationsRef, where('createdBy', '==', user.uid));
+    getDocs(stationsQuery).then(stationsSnapshot => {
       const stationIds = stationsSnapshot.docs.map(doc => doc.id);
       const stations = stationsSnapshot.docs.reduce((acc, doc) => {
         acc[doc.id] = { id: doc.id, ...doc.data() } as Station;
         return acc;
       }, {} as { [key: string]: Station });
 
-      // Get all bookings for these stations
       if (stationIds.length === 0) {
         setBookings([]);
         setLoading(false);
@@ -162,25 +159,30 @@ const Bookings: FC = () => {
       }
       const bookingsRef = collection(db, 'bookings');
       const bookingsQuery = query(bookingsRef, where('stationId', 'in', stationIds), orderBy('startTime', 'desc'));
-      const bookingsSnapshot = await getDocs(bookingsQuery);
-
-      const bookingsData = bookingsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        station: stations[doc.data().stationId]
-      })) as (Booking & { station?: Station })[];
-
-      setBookings(bookingsData);
-    } catch (error) {
-      console.error('Error fetching bookings:', error);
+      unsubscribe = onSnapshot(bookingsQuery, (bookingsSnapshot) => {
+        const bookingsData = bookingsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          station: stations[doc.data().stationId]
+        })) as (Booking & { station?: Station })[];
+        setBookings(bookingsData);
+        setLoading(false);
+      }, (err) => {
+        setError('Failed to load bookings');
+        setLoading(false);
+      });
+    }).catch(error => {
       setError('Failed to load bookings');
-    } finally {
       setLoading(false);
-    }
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [user]);
 
   useEffect(() => {
-    fetchBookings();
+    const cleanup = fetchBookings();
+    return cleanup;
   }, [fetchBookings]);
 
   if (!user || user.role !== 'admin') {
