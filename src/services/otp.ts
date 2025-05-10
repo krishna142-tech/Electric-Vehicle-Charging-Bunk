@@ -1,8 +1,8 @@
 import emailjs from 'emailjs-com';
 
-const SERVICE_ID = 'service_g60ss7r';
-const TEMPLATE_ID = 'template_18ykfod';
-const PUBLIC_KEY = 'dxgdiGjq_ydGVPnF5';
+const SERVICE_ID = '';
+const TEMPLATE_ID = '';
+const PUBLIC_KEY = '';
 
 // Generate a 6-digit OTP
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
