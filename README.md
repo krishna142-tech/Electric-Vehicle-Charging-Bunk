@@ -1,4 +1,4 @@
-# Electric Vehicle Charging Station Management System [Ampora]
+# Electric Vehicle Charging Bunk [Ampora]
 
 A comprehensive web application for managing and booking electric vehicle charging stations. This system provides a seamless experience for both station administrators and EV users to manage charging operations efficiently.
 
