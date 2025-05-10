@@ -1,4 +1,4 @@
-import { collection, query, where, getDocs, updateDoc, doc, Timestamp, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, Timestamp, increment, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 export const checkAndUpdateExpiredBookings = async () => {
@@ -41,14 +41,46 @@ export const checkAndUpdateExpiredBookings = async () => {
 
 // Function to start periodic checking of expired bookings
 export const startExpiredBookingsCheck = () => {
-  // Check every minute
+  // Check every 30 seconds
   const interval = setInterval(async () => {
     try {
       await checkAndUpdateExpiredBookings();
     } catch (error) {
       console.error('Error in periodic booking check:', error);
     }
-  }, 60000); // 60000 ms = 1 minute
+  }, 30000); // 30000 ms = 30 seconds
 
   return interval;
+};
+
+// Function to verify a booking and update slots
+export const verifyBooking = async (bookingId: string) => {
+  try {
+    const bookingRef = doc(db, 'bookings', bookingId);
+    const bookingSnap = await getDoc(bookingRef);
+    
+    if (!bookingSnap.exists()) {
+      throw new Error('Booking not found');
+    }
+
+    const booking = bookingSnap.data();
+    
+    // Update booking status
+    await updateDoc(bookingRef, {
+      status: 'verified',
+      expired: true,
+      verifiedAt: new Date().toISOString()
+    });
+
+    // Update station's available slots
+    const stationRef = doc(db, 'stations', booking.stationId);
+    await updateDoc(stationRef, {
+      availableSlots: increment(1)
+    });
+
+    return true;
+  } catch (error) {
+    console.error('Error verifying booking:', error);
+    throw error;
+  }
 }; 

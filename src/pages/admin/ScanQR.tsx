@@ -2,8 +2,7 @@ import { FC, useEffect, useRef, useState } from 'react';
 import { Box, Button, Typography, Container, Alert, CircularProgress } from '@mui/material';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { verifyBooking } from '../../services/booking';
 
 const ScanQR: FC = () => {
   const scannerRef = useRef<HTMLDivElement>(null);
@@ -18,32 +17,15 @@ const ScanQR: FC = () => {
       setLoading(true);
       setError(null);
 
-      const bookingRef = doc(db, 'bookings', bookingId);
-      const bookingSnap = await getDoc(bookingRef);
-
-      if (!bookingSnap.exists()) {
-        setError('Booking not found');
-        return;
-      }
-
-      const booking = bookingSnap.data();
-      if (booking.status === 'verified') {
-        setError('Booking already verified');
-        return;
-      }
-
-      await updateDoc(bookingRef, {
-        status: 'verified',
-        verifiedAt: new Date().toISOString(),
-      });
-
-      setScanResult(booking);
-      // Stop the scanner after successful verification
+      // Stop the scanner immediately after getting a valid QR code
       if (html5QrCodeRef.current) {
         await html5QrCodeRef.current.stop();
       }
+
+      await verifyBooking(bookingId);
+      setScanResult({ message: 'Booking verified successfully!' });
     } catch (err) {
-      setError('Failed to verify booking');
+      setError(err instanceof Error ? err.message : 'Failed to verify booking');
       console.error('Error verifying booking:', err);
     } finally {
       setLoading(false);
@@ -59,8 +41,10 @@ const ScanQR: FC = () => {
         { facingMode: 'environment' },
         { fps: 10, qrbox: 250 },
         (decodedText: string) => {
-          // The QR code contains the booking ID directly
-          handleBookingValidation(decodedText);
+          // Only process if not already loading
+          if (!loading) {
+            handleBookingValidation(decodedText);
+          }
         },
         (error: string) => {
           // Only log errors that are not related to "no QR code found"
@@ -87,7 +71,7 @@ const ScanQR: FC = () => {
         }
       }
     };
-  }, []);
+  }, [loading]); // Add loading as a dependency
 
   return (
     <Container maxWidth="sm">
@@ -111,20 +95,8 @@ const ScanQR: FC = () => {
         {scanResult ? (
           <Box sx={{ mt: 2 }}>
             <Alert severity="success" sx={{ mb: 2 }}>
-              Booking verified successfully!
+              {scanResult.message}
             </Alert>
-            <Typography variant="body1" gutterBottom>
-              Station: {scanResult.stationName}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              Start Time: {new Date(scanResult.bookingTime).toLocaleString()}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              Duration: {scanResult.duration >= 60 ? `${scanResult.duration / 60} hr` : `${scanResult.duration} min`}
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              Amount: ₹{scanResult.totalCost}
-            </Typography>
             <Button
               variant="contained"
               color="primary"

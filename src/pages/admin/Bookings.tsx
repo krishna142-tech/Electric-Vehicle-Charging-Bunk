@@ -29,6 +29,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Booking, Station } from '../../types';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
+import { verifyBooking } from '../../services/booking';
 
 // @ts-ignore
 // eslint-disable-next-line
@@ -49,9 +50,10 @@ const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onS
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<any>(null);
   const uniqueIdRef = useRef(getUniqueId());
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
-    if (open && scannerRef.current) {
+    if (open && scannerRef.current && !isScanning) {
       // Wait for the next animation frame to ensure the div is in the DOM
       const raf = requestAnimationFrame(() => {
         const id = uniqueIdRef.current;
@@ -66,11 +68,22 @@ const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onS
           html5QrCodeRef.current.start(
             { facingMode: "environment" },
             { fps: 10, qrbox: 250 },
-            (decodedText: string) => {
-              onScanSuccess(decodedText);
-              html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
+            async (decodedText: string) => {
+              if (!isScanning) {
+                setIsScanning(true);
+                try {
+                  await html5QrCodeRef.current.stop();
+                  onScanSuccess(decodedText);
+                } catch (err) {
+                  console.error('Error stopping scanner:', err);
+                }
+              }
             },
-            (error: any) => {}
+            (error: any) => {
+              if (typeof error === 'string' && !error.includes('decode')) {
+                onScanError(error);
+              }
+            }
           ).catch((err: any) => {
             console.error('Html5Qrcode start error:', err);
             onScanError(String(err));
@@ -84,11 +97,16 @@ const QRScanDialog: FC<QRScanDialogProps> = ({ open, onClose, onScanSuccess, onS
       return () => {
         cancelAnimationFrame(raf);
         if (html5QrCodeRef.current) {
-          html5QrCodeRef.current.stop().then(() => html5QrCodeRef.current.clear());
+          html5QrCodeRef.current.stop().then(() => {
+            html5QrCodeRef.current?.clear();
+            setIsScanning(false);
+          }).catch((err: any) => {
+            console.error('Error stopping scanner:', err);
+          });
         }
       };
     }
-  }, [open, onScanSuccess, onScanError]);
+  }, [open, onScanSuccess, onScanError, isScanning]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -223,24 +241,7 @@ const Bookings: FC = () => {
               setScanError(null);
               try {
                 const bookingId = data.trim();
-                const bookingRef = doc(db, 'bookings', bookingId);
-                const bookingSnap = await getDoc(bookingRef);
-                if (!bookingSnap.exists()) {
-                  setScanError('Booking not found.');
-                  setScanning(false);
-                  return;
-                }
-                const bookingData = bookingSnap.data();
-                if (bookingData.status === 'verified') {
-                  setScanError('Booking already verified.');
-                  setScanning(false);
-                  return;
-                }
-                await updateDoc(bookingRef, {
-                  status: 'verified',
-                  expired: true,
-                  verifiedAt: new Date().toISOString(),
-                });
+                await verifyBooking(bookingId);
                 setScanSuccess('Booking verified and expired!');
                 setTimeout(() => {
                   setScanDialogOpen(false);
@@ -249,7 +250,7 @@ const Bookings: FC = () => {
                   fetchBookings();
                 }, 1500);
               } catch (err) {
-                setScanError('Failed to verify booking.');
+                setScanError(err instanceof Error ? err.message : 'Failed to verify booking.');
                 setScanning(false);
               }
             }
