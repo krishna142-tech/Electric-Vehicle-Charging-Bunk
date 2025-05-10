@@ -221,6 +221,8 @@ src/
 ## 👥 Authors
 
 - Krishna Sevak
+- https://www.linkedin.com/in/krishna-sevak/
+- https://krishnasevak.netlify.app/
 
 ## 🙏 Acknowledgments
 
