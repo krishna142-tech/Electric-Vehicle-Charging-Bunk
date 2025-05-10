@@ -22,27 +22,31 @@ export const checkAndUpdateExpiredBookings = async () => {
     // Process each expired booking
     for (const bookingDoc of expiredBookings) {
       const booking = bookingDoc.data();
-      console.log('Processing booking:', bookingDoc.id, booking);
-      console.log('Booking endTime:', booking.endTime, 'Type:', typeof booking.endTime);
-      // Update booking status
-      await updateDoc(doc(db, 'bookings', bookingDoc.id), {
-        status: 'completed',
-        expired: true
-      });
-
-      // Update station's available slots
-      const stationRef = doc(db, 'stations', booking.stationId);
-      const stationSnap = await getDoc(stationRef);
-      if (stationSnap.exists()) {
-        const station = stationSnap.data();
-        if (station.availableSlots < station.totalSlots) {
-          await updateDoc(stationRef, {
-            availableSlots: increment(1)
-          });
-          console.log('Incremented availableSlots for station:', booking.stationId);
-        } else {
-          console.log('availableSlots already at max for station:', booking.stationId);
+      // Only process if not already completed or expired
+      if ((booking.status === 'confirmed' || booking.status === 'verified') && !booking.expired) {
+        console.log('Processing booking:', bookingDoc.id, booking);
+        console.log('Booking endTime:', booking.endTime, 'Type:', typeof booking.endTime);
+        // Update station's available slots
+        const stationRef = doc(db, 'stations', booking.stationId);
+        const stationSnap = await getDoc(stationRef);
+        if (stationSnap.exists()) {
+          const station = stationSnap.data();
+          if (station.availableSlots < station.totalSlots) {
+            await updateDoc(stationRef, {
+              availableSlots: increment(1)
+            });
+            console.log('Incremented availableSlots for station:', booking.stationId);
+          } else {
+            console.log('availableSlots already at max for station:', booking.stationId);
+          }
         }
+        // Mark booking as completed and expired
+        await updateDoc(doc(db, 'bookings', bookingDoc.id), {
+          status: 'completed',
+          expired: true
+        });
+      } else {
+        console.log('Skipping booking (already completed/expired):', bookingDoc.id);
       }
     }
 
