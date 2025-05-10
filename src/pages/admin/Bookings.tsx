@@ -243,7 +243,11 @@ const Bookings: FC = () => {
               setScanError(null);
               try {
                 const bookingId = data.trim();
-                await verifyBooking(bookingId);
+                if (!user) {
+                  setScanError('You must be logged in to verify bookings');
+                  return;
+                }
+                await verifyBooking(bookingId, user.uid);
                 setScanSuccess('Booking verified and expired!');
                 setTimeout(() => {
                   setScanDialogOpen(false);

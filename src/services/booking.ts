@@ -74,7 +74,7 @@ export const startExpiredBookingsCheck = () => {
 };
 
 // Function to verify a booking and update slots
-export const verifyBooking = async (bookingId: string) => {
+export const verifyBooking = async (bookingId: string, adminId: string) => {
   try {
     const bookingRef = doc(db, 'bookings', bookingId);
     const bookingSnap = await getDoc(bookingRef);
@@ -88,6 +88,21 @@ export const verifyBooking = async (bookingId: string) => {
     // Check if booking is already verified
     if (booking.status === 'verified') {
       throw new Error('Booking is already verified');
+    }
+
+    // Get the station to check ownership
+    const stationRef = doc(db, 'stations', booking.stationId);
+    const stationSnap = await getDoc(stationRef);
+    
+    if (!stationSnap.exists()) {
+      throw new Error('Station not found');
+    }
+
+    const station = stationSnap.data();
+    
+    // Check if the admin owns the station
+    if (station.createdBy !== adminId) {
+      throw new Error('You do not have permission to verify bookings for this station');
     }
 
     // Only update booking status, do NOT increment slots here

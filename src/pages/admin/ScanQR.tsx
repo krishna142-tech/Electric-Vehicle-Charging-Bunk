@@ -3,16 +3,23 @@ import { Box, Button, Typography, Container, Alert, CircularProgress } from '@mu
 import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import { verifyBooking } from '../../services/booking';
+import { useAuth } from '../../context/AuthContext';
 
 const ScanQR: FC = () => {
   const scannerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<any>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [scanResult, setScanResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleBookingValidation = async (bookingId: string) => {
+    if (!user) {
+      setError('You must be logged in to verify bookings');
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -22,7 +29,7 @@ const ScanQR: FC = () => {
         await html5QrCodeRef.current.stop();
       }
 
-      await verifyBooking(bookingId);
+      await verifyBooking(bookingId, user.uid);
       setScanResult({ message: 'Booking verified successfully!' });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to verify booking';
