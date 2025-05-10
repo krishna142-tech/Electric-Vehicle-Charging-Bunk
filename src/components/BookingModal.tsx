@@ -44,7 +44,7 @@ const BookingModal: FC<BookingModalProps> = ({ open, onClose, station }) => {
   const [bookingTime, setBookingTime] = useState<Date | null>(new Date());
   const [durationType, setDurationType] = useState<'preset' | 'custom'>('preset');
   const [duration, setDuration] = useState<number>(1); // Default 1 hour
-  const [customMinutes, setCustomMinutes] = useState<number>(15); // Default 15 minutes
+  const [customMinutes, setCustomMinutes] = useState<string>('15'); // Changed to string for better input handling
   const [step, setStep] = useState<'form' | 'confirmation'>('form');
   const [bookingId, setBookingId] = useState<string | null>(null);
 
@@ -55,7 +55,8 @@ const BookingModal: FC<BookingModalProps> = ({ open, onClose, station }) => {
       return duration * ratePerHour;
     } else {
       // Convert minutes to hours for cost calculation
-      return (customMinutes / 60) * ratePerHour;
+      const minutes = parseInt(customMinutes) || 15;
+      return (minutes / 60) * ratePerHour;
     }
   };
 
@@ -70,7 +71,7 @@ const BookingModal: FC<BookingModalProps> = ({ open, onClose, station }) => {
       setError(null);
 
       // Calculate final duration in minutes
-      const finalDurationMinutes = durationType === 'preset' ? duration * 60 : customMinutes;
+      const finalDurationMinutes = durationType === 'preset' ? duration * 60 : Math.max(15, parseInt(customMinutes) || 15);
       const durationMs = finalDurationMinutes * 60 * 1000;
       const expiresAt = new Date(bookingTime.getTime() + durationMs).toISOString();
       const startTime = bookingTime.toISOString();
@@ -234,8 +235,23 @@ const BookingModal: FC<BookingModalProps> = ({ open, onClose, station }) => {
                   type="number"
                   value={customMinutes}
                   onChange={(e) => {
-                    const value = Math.max(15, Number(e.target.value));
-                    setCustomMinutes(value);
+                    const value = e.target.value;
+                    // Allow empty value for better UX while typing
+                    if (value === '') {
+                      setCustomMinutes('');
+                    } else {
+                      const numValue = parseInt(value);
+                      if (!isNaN(numValue)) {
+                        setCustomMinutes(value);
+                      }
+                    }
+                  }}
+                  onBlur={() => {
+                    // Ensure minimum value on blur
+                    const numValue = parseInt(customMinutes);
+                    if (isNaN(numValue) || numValue < 15) {
+                      setCustomMinutes('15');
+                    }
                   }}
                   fullWidth
                   margin="normal"
@@ -244,11 +260,24 @@ const BookingModal: FC<BookingModalProps> = ({ open, onClose, station }) => {
                     inputProps: { 
                       min: 15,
                       step: 15,
-                      inputMode: 'numeric',
-                      pattern: '[0-9]*'
+                      inputMode: 'decimal',
+                      style: { 
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'textfield'
+                      }
+                    }
+                  }}
+                  sx={{
+                    '& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button': {
+                      WebkitAppearance: 'none',
+                      margin: 0,
+                    },
+                    '& input[type=number]': {
+                      MozAppearance: 'textfield'
                     }
                   }}
                   helperText="Minimum duration: 15 minutes"
+                  error={parseInt(customMinutes) < 15}
                 />
               )}
             </Grid>
