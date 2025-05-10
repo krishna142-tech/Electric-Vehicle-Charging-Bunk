@@ -25,7 +25,12 @@ const ScanQR: FC = () => {
       await verifyBooking(bookingId);
       setScanResult({ message: 'Booking verified successfully!' });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to verify booking');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to verify booking';
+      setError(errorMessage);
+      // If the booking is already verified, show a different message
+      if (errorMessage === 'Booking is already verified') {
+        setScanResult({ message: 'This booking has already been verified!' });
+      }
       console.error('Error verifying booking:', err);
     } finally {
       setLoading(false);

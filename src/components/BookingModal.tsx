@@ -181,6 +181,16 @@ const BookingModal: FC<BookingModalProps> = ({ open, onClose, station }) => {
                   value={bookingTime}
                   onChange={(newValue) => setBookingTime(newValue)}
                   sx={{ width: '100%', mt: 2 }}
+                  slotProps={{
+                    textField: {
+                      fullWidth: true,
+                      margin: 'normal'
+                    }
+                  }}
+                  format="dd/MM/yyyy HH:mm"
+                  ampm={false}
+                  views={['year', 'month', 'day', 'hours', 'minutes']}
+                  disablePast
                 />
               </LocalizationProvider>
             </Grid>
@@ -205,18 +215,17 @@ const BookingModal: FC<BookingModalProps> = ({ open, onClose, station }) => {
             </Grid>
             <Grid item xs={12}>
               {durationType === 'preset' ? (
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Duration (hours)</InputLabel>
+                <FormControl fullWidth sx={{ mt: 2 }}>
+                  <InputLabel>Duration</InputLabel>
                   <Select
                     value={duration}
-                    label="Duration (hours)"
                     onChange={(e) => setDuration(Number(e.target.value))}
+                    label="Duration"
                   >
-                    {[1, 2, 3, 4, 5, 6].map((hours) => (
-                      <MenuItem key={hours} value={hours}>
-                        {hours} {hours === 1 ? 'hour' : 'hours'}
-                      </MenuItem>
-                    ))}
+                    <MenuItem value={1}>1 hour</MenuItem>
+                    <MenuItem value={2}>2 hours</MenuItem>
+                    <MenuItem value={3}>3 hours</MenuItem>
+                    <MenuItem value={4}>4 hours</MenuItem>
                   </Select>
                 </FormControl>
               ) : (
@@ -232,7 +241,12 @@ const BookingModal: FC<BookingModalProps> = ({ open, onClose, station }) => {
                   margin="normal"
                   InputProps={{
                     endAdornment: <InputAdornment position="end">minutes</InputAdornment>,
-                    inputProps: { min: 15 }
+                    inputProps: { 
+                      min: 15,
+                      step: 15,
+                      inputMode: 'numeric',
+                      pattern: '[0-9]*'
+                    }
                   }}
                   helperText="Minimum duration: 15 minutes"
                 />

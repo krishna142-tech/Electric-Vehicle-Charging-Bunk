@@ -83,6 +83,13 @@ export const verifyBooking = async (bookingId: string) => {
       throw new Error('Booking not found');
     }
 
+    const booking = bookingSnap.data();
+    
+    // Check if booking is already verified
+    if (booking.status === 'verified') {
+      throw new Error('Booking is already verified');
+    }
+
     // Only update booking status, do NOT increment slots here
     await updateDoc(bookingRef, {
       status: 'verified',
