@@ -1,60 +1,75 @@
-import { collection, query, where, getDocs, updateDoc, doc, Timestamp, increment, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, updateDoc, doc, Timestamp, increment, getDoc, writeBatch, DocumentData } from 'firebase/firestore';
 import { db } from '../config/firebase';
+
+interface Booking {
+  id: string;
+  userId: string;
+  stationId: string;
+  startTime: string;
+  endTime: string;
+  status: 'pending' | 'confirmed' | 'verified' | 'completed' | 'cancelled';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+interface Station {
+  id: string;
+  name: string;
+  location: string;
+  totalSlots: number;
+  availableSlots: number;
+  createdBy: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
 
 export const checkAndUpdateExpiredBookings = async () => {
   try {
-    console.log('Running checkAndUpdateExpiredBookings...');
-    // Get all confirmed bookings that have expired
-    const bookingsRef = collection(db, 'bookings');
     const now = new Date();
-    const nowIso = now.toISOString();
-    console.log('Current time (ISO):', nowIso);
+    const bookingsRef = collection(db, 'bookings');
     const q = query(
       bookingsRef,
-      where('status', 'in', ['confirmed', 'verified']),
-      where('endTime', '<=', nowIso)
+      where('status', '==', 'confirmed'),
+      where('endTime', '<', now)
     );
 
     const querySnapshot = await getDocs(q);
-    const expiredBookings = querySnapshot.docs;
-    console.log('Found', expiredBookings.length, 'expired bookings');
+    const batch = writeBatch(db);
 
-    // Process each expired booking
-    for (const bookingDoc of expiredBookings) {
-      const booking = bookingDoc.data();
-      // Only process if not already completed or expired
-      if ((booking.status === 'confirmed' || booking.status === 'verified') && !booking.expired) {
-        console.log('Processing booking:', bookingDoc.id, booking);
-        console.log('Booking endTime:', booking.endTime, 'Type:', typeof booking.endTime);
-        // Update station's available slots
-        const stationRef = doc(db, 'stations', booking.stationId);
-        const stationSnap = await getDoc(stationRef);
-        if (stationSnap.exists()) {
-          const station = stationSnap.data();
-          // Ensure availableSlots doesn't exceed totalSlots
-          const newAvailableSlots = Math.min((station.availableSlots || 0) + 1, station.totalSlots);
-          if (newAvailableSlots !== station.availableSlots) {
-            await updateDoc(stationRef, {
-              availableSlots: newAvailableSlots
-            });
-            console.log('Updated availableSlots for station:', booking.stationId, 'to', newAvailableSlots);
-          } else {
-            console.log('availableSlots already at max for station:', booking.stationId);
-          }
-        }
-        // Mark booking as completed and expired
-        await updateDoc(doc(db, 'bookings', bookingDoc.id), {
-          status: 'completed',
-          expired: true
+    for (const bookingDoc of querySnapshot.docs) {
+      const booking = bookingDoc.data() as Booking;
+      
+      // Update booking status
+      batch.update(bookingDoc.ref, {
+        status: 'completed',
+        updatedAt: now
+      });
+
+      // Update station's available slots
+      const stationRef = doc(db, 'stations', booking.stationId);
+      const stationDoc = await getDoc(stationRef);
+      
+      if (stationDoc.exists()) {
+        const station = stationDoc.data() as Station;
+        const currentAvailableSlots = station.availableSlots || 0;
+        
+        // Ensure we don't exceed total slots
+        const newAvailableSlots = Math.min(
+          station.totalSlots,
+          currentAvailableSlots + 1
+        );
+
+        batch.update(stationRef, {
+          availableSlots: newAvailableSlots,
+          updatedAt: now
         });
-      } else {
-        console.log('Skipping booking (already completed/expired):', bookingDoc.id);
       }
     }
 
-    return expiredBookings.length;
+    await batch.commit();
+    console.log(`Updated ${querySnapshot.size} expired bookings`);
   } catch (error) {
-    console.error('Error checking expired bookings:', error);
+    console.error('Error updating expired bookings:', error);
     throw error;
   }
 };

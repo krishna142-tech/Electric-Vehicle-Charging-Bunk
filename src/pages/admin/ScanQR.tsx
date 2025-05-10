@@ -4,6 +4,8 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { useNavigate } from 'react-router-dom';
 import { verifyBooking } from '../../services/booking';
 import { useAuth } from '../../context/AuthContext';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../../config/firebase';
 
 const ScanQR: FC = () => {
   const scannerRef = useRef<HTMLDivElement>(null);
@@ -13,10 +15,39 @@ const ScanQR: FC = () => {
   const [scanResult, setScanResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [hasStations, setHasStations] = useState<boolean | null>(null);
+
+  // Check if admin has any stations
+  useEffect(() => {
+    const checkStations = async () => {
+      if (!user) return;
+      
+      try {
+        const stationsRef = collection(db, 'stations');
+        const q = query(stationsRef, where('createdBy', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        setHasStations(!querySnapshot.empty);
+        
+        if (querySnapshot.empty) {
+          setError('You need to add a station before you can verify bookings');
+        }
+      } catch (err) {
+        console.error('Error checking stations:', err);
+        setError('Failed to check station ownership');
+      }
+    };
+
+    checkStations();
+  }, [user]);
 
   const handleBookingValidation = async (bookingId: string) => {
     if (!user) {
       setError('You must be logged in to verify bookings');
+      return;
+    }
+
+    if (!hasStations) {
+      setError('You need to add a station before you can verify bookings');
       return;
     }
 
@@ -45,7 +76,7 @@ const ScanQR: FC = () => {
   };
 
   useEffect(() => {
-    if (scannerRef.current) {
+    if (scannerRef.current && hasStations) {
       const scannerId = 'qr-scanner';
       scannerRef.current.id = scannerId;
       html5QrCodeRef.current = new Html5Qrcode(scannerId);
@@ -83,7 +114,7 @@ const ScanQR: FC = () => {
         }
       }
     };
-  }, [loading]); // Add loading as a dependency
+  }, [loading, hasStations]);
 
   return (
     <Container maxWidth="sm">
@@ -123,9 +154,21 @@ const ScanQR: FC = () => {
           </Box>
         ) : (
           <>
-            <Box sx={{ position: 'relative', width: '100%', height: '300px', mb: 2 }}>
-              <div ref={scannerRef} style={{ width: '100%', height: '100%' }} />
-            </Box>
+            {hasStations ? (
+              <Box sx={{ position: 'relative', width: '100%', height: '300px', mb: 2 }}>
+                <div ref={scannerRef} style={{ width: '100%', height: '100%' }} />
+              </Box>
+            ) : (
+              <Box sx={{ mt: 2 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate('/admin/stations')}
+                >
+                  Add Station
+                </Button>
+              </Box>
+            )}
             <Button
               variant="contained"
               color="primary"
