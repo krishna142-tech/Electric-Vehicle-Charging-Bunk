@@ -17,8 +17,8 @@ const getExpiryTime = () => {
 export const sendOtp = async (email: string) => {
   const otp = generateOtp();
   const templateParams = {
-    to_email: email,
-    otp: otp,
+    passcode: otp,
+    time: getExpiryTime(),
   };
   await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
   return otp;
