@@ -1,7 +1,5 @@
 import { FC, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import theme from './theme';
 import Layout from './components/Layout';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -43,81 +41,78 @@ const App: FC = () => {
   }, []);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <Router>
-          <Layout>
-            <FirebaseConnectionError error={firebaseError} />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              
-              {/* Protected User Routes */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/stations" element={
-                <ProtectedRoute>
-                  <Stations />
-                </ProtectedRoute>
-              } />
-              <Route path="/bookings" element={
-                <ProtectedRoute>
-                  <UserBookings />
-                </ProtectedRoute>
-              } />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <UserProfile />
-                </ProtectedRoute>
-              } />
+    <AuthProvider>
+      <Router>
+        <Layout>
+          <FirebaseConnectionError error={firebaseError} />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            
+            {/* Protected User Routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/stations" element={
+              <ProtectedRoute>
+                <Stations />
+              </ProtectedRoute>
+            } />
+            <Route path="/bookings" element={
+              <ProtectedRoute>
+                <UserBookings />
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <UserProfile />
+              </ProtectedRoute>
+            } />
 
-              {/* Protected Admin Routes */}
-              <Route path="/admin/dashboard" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/stations" element={
-                <ProtectedRoute requiredRole="admin">
-                  <ManageStations />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/bookings" element={
-                <ProtectedRoute requiredRole="admin">
-                  <Bookings />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/profile" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminProfile />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/stations-map" element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminStationsMap />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/scan-qr" element={
-                <ProtectedRoute requiredRole="admin">
-                  <ScanQR />
-                </ProtectedRoute>
-              } />
+            {/* Protected Admin Routes */}
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/stations" element={
+              <ProtectedRoute requiredRole="admin">
+                <ManageStations />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/bookings" element={
+              <ProtectedRoute requiredRole="admin">
+                <Bookings />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/profile" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/stations-map" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminStationsMap />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/scan-qr" element={
+              <ProtectedRoute requiredRole="admin">
+                <ScanQR />
+              </ProtectedRoute>
+            } />
 
-              {/* Payment Route */}
-              <Route path="/payment" element={<PaymentPage />} />
+            {/* Payment Route */}
+            <Route path="/payment" element={<PaymentPage />} />
 
-              {/* 404 Route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </Router>
-      </AuthProvider>
-    </ThemeProvider>
+            {/* 404 Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </AuthProvider>
   );
 };
 
