@@ -1,8 +1,7 @@
 import emailjs from 'emailjs-com';
 
-const SERVICE_ID = process.env.REACT_APP_EMAILJS_SERVICE_ID || '';
-const TEMPLATE_ID = process.env.REACT_APP_EMAILJS_TEMPLATE_ID || '';
-const PUBLIC_KEY = process.env.REACT_APP_EMAILJS_PUBLIC_KEY || '';
+// Initialize EmailJS with your public key
+emailjs.init(process.env.REACT_APP_EMAILJS_PUBLIC_KEY || '');
 
 // Generate a 6-digit OTP
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -15,16 +14,28 @@ const getExpiryTime = () => {
 };
 
 export const sendOtp = async (email: string) => {
-  const otp = generateOtp();
-  const templateParams = {
-    passcode: otp,
-    time: getExpiryTime(),
-  };
-  await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
-  return otp;
+  try {
+    const otp = generateOtp();
+    const templateParams = {
+      to_email: email,
+      otp: otp,
+      expiry_time: getExpiryTime(),
+    };
+
+    await emailjs.send(
+      process.env.REACT_APP_EMAILJS_SERVICE_ID || '',
+      process.env.REACT_APP_EMAILJS_TEMPLATE_ID || '',
+      templateParams
+    );
+
+    return otp;
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    throw new Error('Failed to send OTP. Please try again.');
+  }
 };
 
-// On the frontend, store the OTP in state and compare it when the user enters it
+// Verify OTP
 export const verifyOtp = async (inputOtp: string, sentOtp: string) => {
   return inputOtp === sentOtp;
-}; 
+};

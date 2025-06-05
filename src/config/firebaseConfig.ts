@@ -1,18 +1,8 @@
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore, disableNetwork } from 'firebase/firestore';
-import { initializeFirestore } from '../utils/firebaseErrorHandler';
+import { getFirestore, Firestore } from 'firebase/firestore';
 
-interface FirebaseConfig {
-  apiKey: string | undefined;
-  authDomain: string | undefined;
-  projectId: string | undefined;
-  storageBucket: string | undefined;
-  messagingSenderId: string | undefined;
-  appId: string | undefined;
-}
-
-const firebaseConfig: FirebaseConfig = {
+const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
@@ -26,28 +16,16 @@ const app: FirebaseApp = initializeApp(firebaseConfig);
 const auth: Auth = getAuth(app);
 const db: Firestore = getFirestore(app);
 
-// Initialize Firestore with error handling
-initializeFirestore(db).then(({ success, error }) => {
-  if (!success && error) {
-    console.error('Firestore initialization error:', error);
-    // Only disable network if connection is blocked
-    if (error.includes('blocked')) {
-      disableNetwork(db).then(() => {
-        console.log('Network disabled due to blocking');
-      }).catch(console.error);
-    }
-  }
-}).catch(error => {
-  // Handle any uncaught initialization errors
-  console.error('Uncaught Firestore initialization error:', error);
-});
+// Enable offline persistence
+if (typeof window !== 'undefined') {
+  getFirestore(app).enablePersistence()
+    .catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+      } else if (err.code === 'unimplemented') {
+        console.warn('The current browser does not support persistence.');
+      }
+    });
+}
 
-// Log non-sensitive config for debugging
-console.log('Firebase initialized with config:', {
-  authDomain: firebaseConfig.authDomain,
-  projectId: firebaseConfig.projectId,
-  storageBucket: firebaseConfig.storageBucket,
-});
-
-export type { FirebaseConfig };
-export { firebaseConfig, app, auth, db }; 
+export { app, auth, db };
