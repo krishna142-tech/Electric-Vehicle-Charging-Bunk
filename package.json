@@ -30,7 +30,6 @@
     "react-i18next": "^13.0.0",
     "react-router-dom": "^6.11.1",
     "react-scripts": "5.0.1",
-    "revenuecat-react": "^1.0.0",
     "typescript": "^4.9.5",
     "web-vitals": "^2.1.4"
   },
