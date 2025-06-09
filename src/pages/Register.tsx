@@ -45,10 +45,33 @@ const Register: FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate all required fields
+    if (!name.trim()) {
+      setError('Name is required');
+      return;
+    }
+
+    if (!email.trim()) {
+      setError('Email is required');
+      return;
+    }
+
+    if (!password.trim()) {
+      setError('Password is required');
+      return;
+    }
+
+    if (!confirmPassword.trim()) {
+      setError('Please confirm your password');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;
     }
+
     try {
       const generatedOtp = await sendOtp(email);
       setSentOtp(generatedOtp);
@@ -231,4 +254,4 @@ const Register: FC = () => {
   );
 };
 
-export default Register; 
+export default Register;
