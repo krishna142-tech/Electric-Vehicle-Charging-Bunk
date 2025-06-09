@@ -244,7 +244,7 @@ const Register: FC = () => {
             fullWidth
             sx={{ mt: 2 }}
           />
-          {otpError && <Alert severity="error\" sx={{ mt: 2 }}>{otpError}</Alert>}
+          {otpError && <Alert severity="error" sx={{ mt: 2 }}>{otpError}</Alert>}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleVerifyOtp} variant="contained">Verify</Button>
